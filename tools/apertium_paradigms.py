@@ -77,8 +77,12 @@ def parse(path: Path) -> dict[str, set[str]]:
         # `upper:lower` — the analysis side is the lemma we want. Unescape.
         lemma = re.split(r"(?<!%):", form)[0]
         lemma = re.sub(r"%(.)", r"\1", lemma).strip()
-        if lemma and not lemma.startswith("<"):
-            out[lemma].add(cont)
+        # Continuation entries carry tags rather than lemmas — `+е<cop><aor>`,
+        # `+лы<post>`. They are morphology, not vocabulary, and letting them
+        # through put `+ма<qst>+е<cop><aor><evid>` into the wordlist.
+        if not lemma or lemma.startswith(("<", "+")) or "<" in lemma:
+            continue
+        out[lemma].add(cont)
     return out
 
 

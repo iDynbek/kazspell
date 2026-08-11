@@ -50,22 +50,50 @@ only way that dictionary stops being mined.
 Phase 1, per-lexeme paradigm assignment. Every entry has to say which families
 it takes; nothing downstream works until it does.
 
-    tools/apertium_paradigms.py   lift 33,569 hand-assigned paradigms out of
+    tools/apertium_paradigms.py   lift 33,480 hand-assigned paradigms out of
                                   apertium-kaz's lexc, including the
                                   transitive/intransitive split that decides
                                   whether a passive can form at all
+    tools/build_lexicon.py        assemble the wordlist from primary sources,
+                                  refusing what should never have been let in
 
-Coverage of hunspell-kk's 131,249 entries, and how far the sources agree:
+### The lexicon is rebuilt, not inherited
 
-| source | entries | share |
+hunspell-kk's wordlist was assembled by union and filtered afterwards or not at
+all. Carrying it forward would carry its measured defects — 16 entries with a
+Latin `i` inside Cyrillic, and 951 Russian-keyboard spellings standing beside
+the Kazakh ones they make unflaggable. Both are cheap to refuse at admission
+and expensive to unpick once a morphological model has been built on top.
+
+201,724 candidates from apertium, kazdict, KazNERD and the 2009 release give
+133,079 entries. 64,645 multi-word headwords are set aside rather than
+discarded — they are what a compound handler will need. 4,000 are refused:
+
+| reason | entries |
+|---|---|
+| outside the Kazakh alphabet | 2,426 |
+| not Cyrillic at all | 973 |
+| leading or trailing punctuation | 282 |
+| transliteration of an attested Kazakh spelling | 171 |
+| Latin letters inside a Cyrillic word | 147 |
+
+Mixed-script entries: **0**. `сезим`, `курып` and `акысыз` are gone; `сезім`,
+`құрып` and `ақысыз` remain.
+
+| | entries | share |
 |---|---|---|
-| apertium-kaz paradigms | 28,624 | 21.8% |
-| kazdict POS labels | 45,737 | 34.8% |
-| either | 64,146 | 48.9% |
-| both | 10,215 | 7.8% |
-| neither — needs corpus evidence | 67,103 | 51.1% |
+| with a part of speech | 77,272 | 58.1% |
+| attested in the books | 64,163 | 48.2% |
 
-Where both label the same entry they agree **91.8%** of the time. The 796
-disagreements are 55% noun-against-adjective, which is the one boundary Kazakh
-genuinely blurs, and only 84 are noun-against-verb, the distinction that
-actually changes which track an entry inflects on.
+Where apertium and kazdict both label an entry they agree **91.8%** of the
+time. The 796 disagreements are 55% noun-against-adjective, the one boundary
+Kazakh genuinely blurs; only 84 are noun-against-verb, the distinction that
+decides which track an entry inflects on.
+
+### Known gap
+
+Proper names. The Wikipedia name list hunspell-kk draws on is not a source
+here, because 868 of the 951 transliteration duplicates came from it — but
+names are two fifths of what a Kazakh checker flags in running text, so this
+is a coverage hole that has to be filled from somewhere other than a raw
+name dump.
