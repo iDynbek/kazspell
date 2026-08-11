@@ -70,7 +70,7 @@ def read_attested(path: Path) -> set[str]:
     if not path.exists():
         sys.exit(f"no attestation set at {path}")
     with gzip.open(path, "rt", encoding="utf-8") as fh:
-        return {line.rstrip("\n") for line in fh}
+        return {line.split("\t")[0] for line in fh}
 
 
 def read_apertium(path: Path) -> dict[str, tuple[str, str]]:
@@ -123,18 +123,18 @@ def read_baseline(path: Path) -> set[str]:
             if line.strip()}
 
 
-def read_kaznerd(path: Path) -> set[str]:
-    names = set()
-    for split in ("train", "valid", "test"):
-        f = path / f"IOB2_{split}.txt"
-        if not f.exists():
-            continue
-        for line in f.read_text(encoding="utf-8").splitlines():
-            parts = line.split()
-            if len(parts) >= 2 and parts[-1].endswith(("PERSON", "LOCATION",
-                                                       "ORGANISATION")):
-                names.add(parts[0].lower())
-    return names
+def read_names(path: Path) -> set[str]:
+    """The name list, already spelling-corrected by tools/names.py.
+
+    Names arrive resolved rather than raw, so the transliteration gate below
+    does not have to re-litigate them: `гулжазира` never reaches here, because
+    `гүлжазира` was admitted in its place upstream where the name evidence is.
+    """
+    if not path.exists():
+        return set()
+    return {line.split("\t")[0] for line in
+            path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.startswith("#")}
 
 
 def gate(word: str, sources: set[str], attested: set[str],
@@ -159,6 +159,11 @@ def gate(word: str, sources: set[str], attested: set[str],
     # A spelling with no Kazakh letter, whose Kazakh spelling is a candidate
     # and is attested while this one is not, is the Russian-keyboard form of a
     # word we already have. Admitting it means never being able to flag it.
+    # Names are corrected upstream by tools/names.py where the evidence allows
+    # it, but they are not exempt here. Exempting them let `сезим` and
+    # `гулжазира` straight back in — both are given names, and being a name is
+    # no reason to ship the Russian-keyboard spelling of one beside the Kazakh
+    # spelling it makes unflaggable.
     if not (set(word) & KAZAKH_ONLY) and word not in attested:
         for variant in kazakhised(word):
             if variant in candidates and variant in attested:
@@ -175,8 +180,8 @@ def main() -> int:
                     default=ROOT / "data/apertium_paradigms.tsv")
     ap.add_argument("--kazdict", type=Path,
                     default=ROOT.parent / "kazdict/data/build/kazdict.db")
-    ap.add_argument("--kaznerd", type=Path, default=ROOT.parent / "KazNERD/KazNERD")
-    ap.add_argument("--attested", type=Path, default=ROOT / "data/attested.txt.gz")
+    ap.add_argument("--names", type=Path, default=ROOT / "data/names.tsv")
+    ap.add_argument("--attested", type=Path, default=ROOT / "data/attested.tsv.gz")
     ap.add_argument("--baseline", type=Path,
                     default=ROOT.parent / "hunspell-kk/baseline/kk_KZ.dic")
     args = ap.parse_args()
@@ -184,10 +189,10 @@ def main() -> int:
     attested = read_attested(args.attested)
     apertium = read_apertium(args.apertium)
     kazdict = read_kazdict(args.kazdict)
-    kaznerd = read_kaznerd(args.kaznerd)
+    names = read_names(args.names)
     baseline = read_baseline(args.baseline)
     print(f"apertium {len(apertium):,}  kazdict {len(kazdict):,}  "
-          f"kaznerd {len(kaznerd):,}  baseline {len(baseline):,}  "
+          f"names {len(names):,}  baseline {len(baseline):,}  "
           f"attested {len(attested):,}", file=sys.stderr)
 
     sources: dict[str, set[str]] = collections.defaultdict(set)
@@ -195,8 +200,8 @@ def main() -> int:
         sources[word].add("apertium")
     for word in kazdict:
         sources[word].add("kazdict")
-    for word in kaznerd:
-        sources[word].add("kaznerd")
+    for word in names:
+        sources[word].add("name")
     for word in baseline:
         sources[word].add("baseline")
 
@@ -211,7 +216,7 @@ def main() -> int:
         kd = kazdict.get(word, set())
         if not pos and kd:
             pos = "+".join(sorted(kd))
-        if not pos and "kaznerd" in sources[word]:
+        if not pos and "name" in sources[word]:
             pos = "np"
         admitted.append((word, pos or "?", par,
                          ",".join(sorted(sources[word])),

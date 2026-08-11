@@ -65,35 +65,49 @@ Latin `i` inside Cyrillic, and 951 Russian-keyboard spellings standing beside
 the Kazakh ones they make unflaggable. Both are cheap to refuse at admission
 and expensive to unpick once a morphological model has been built on top.
 
-201,724 candidates from apertium, kazdict, KazNERD and the 2009 release give
-133,079 entries. 64,645 multi-word headwords are set aside rather than
-discarded — they are what a compound handler will need. 4,000 are refused:
+215,930 candidates from apertium, kazdict, the name list and the 2009 release
+give **147,024 entries**. 64,645 multi-word headwords are set aside rather than
+discarded — they are what a compound handler will need. 4,261 are refused:
 
 | reason | entries |
 |---|---|
-| outside the Kazakh alphabet | 2,426 |
-| not Cyrillic at all | 973 |
+| outside the Kazakh alphabet | 2,357 |
+| not Cyrillic at all | 790 |
+| transliteration of an attested Kazakh spelling | 746 |
 | leading or trailing punctuation | 282 |
-| transliteration of an attested Kazakh spelling | 171 |
-| Latin letters inside a Cyrillic word | 147 |
+| Latin letters inside a Cyrillic word | 85 |
 
-Mixed-script entries: **0**. `сезим`, `курып` and `акысыз` are gone; `сезім`,
-`құрып` and `ақысыз` remain.
+Mixed-script entries: **0**. `сезим`, `курып` and `гулжазира` are gone; `сезім`,
+`құрып` and `гүлжазира` remain.
 
 | | entries | share |
 |---|---|---|
-| with a part of speech | 77,272 | 58.1% |
-| attested in the books | 64,163 | 48.2% |
+| with a part of speech | 91,613 | 62.3% |
+| attested in the books | 69,471 | 47.3% |
 
-Where apertium and kazdict both label an entry they agree **91.8%** of the
-time. The 796 disagreements are 55% noun-against-adjective, the one boundary
-Kazakh genuinely blurs; only 84 are noun-against-verb, the distinction that
-decides which track an entry inflects on.
+### Names are corrected, not just filtered
+
+Names are two fifths of what a Kazakh checker flags in running text, so the
+Wikipedia list cannot simply be refused for having supplied 868 of those 951
+duplicates. `tools/names.py` admits 23,981 names and rewrites 1,186 of them to
+the spelling the books show people using — `шынгыс` to `шыңғыс`, `казыбек` to
+`қазыбек`, `жумабаев` to `жұмабаев`, `тауке` to `тәуке`.
+
+The corpus counts are case-folded, which makes the naive version of this
+actively harmful: the commonest word within one harmony edit of a name is
+usually not a name, and the first run "corrected" `али` to `әлі` (still), `ким`
+to `кім` (who) and `жана` to `жаңа` (new). A correction now has to land on
+something with independent reason to be a name — tagged as one by KazNERD in
+running text, or a name we already hold that is too rare to be a common word
+form — and may never land on common vocabulary at all.
+
+Where nothing can decide, the spelling stays as given. `сандыгуль` is still
+`сандыгуль`, because no source offers `сандыгүл` and inventing it would be
+exactly the failure this project exists to avoid.
 
 ### Known gap
 
-Proper names. The Wikipedia name list hunspell-kk draws on is not a source
-here, because 868 of the 951 transliteration duplicates came from it — but
-names are two fifths of what a Kazakh checker flags in running text, so this
-is a coverage hole that has to be filled from somewhere other than a raw
-name dump.
+The book frequency table is case-folded, so it cannot distinguish `Тұрсын` the
+name from `тұрсың` "you stand". Rebuilding it case-aware from the 3,860
+editions would let the name corrections use the corpus directly rather than
+leaning on KazNERD's 6,970 tagged types.
