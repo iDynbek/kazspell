@@ -65,49 +65,49 @@ Latin `i` inside Cyrillic, and 951 Russian-keyboard spellings standing beside
 the Kazakh ones they make unflaggable. Both are cheap to refuse at admission
 and expensive to unpick once a morphological model has been built on top.
 
-215,930 candidates from apertium, kazdict, the name list and the 2009 release
-give **147,024 entries**. 64,645 multi-word headwords are set aside rather than
-discarded — they are what a compound handler will need. 4,261 are refused:
+197,088 candidates from apertium, kazdict and the 2009 release give **128,769
+entries**. 64,645 multi-word headwords are set aside rather than discarded —
+they are what a compound handler will need. 3,674 are refused:
 
 | reason | entries |
 |---|---|
 | outside the Kazakh alphabet | 2,357 |
 | not Cyrillic at all | 790 |
-| transliteration of an attested Kazakh spelling | 746 |
 | leading or trailing punctuation | 282 |
+| transliteration of an attested Kazakh spelling | 159 |
 | Latin letters inside a Cyrillic word | 85 |
 
-Mixed-script entries: **0**. `сезим`, `курып` and `гулжазира` are gone; `сезім`,
-`құрып` and `гүлжазира` remain.
+Mixed-script entries: **0**. `сезим`, `курып` and `акысыз` are gone; `сезім`,
+`құрып` and `ақысыз` remain.
 
 | | entries | share |
 |---|---|---|
-| with a part of speech | 91,613 | 62.3% |
-| attested in the books | 69,471 | 47.3% |
+| with a part of speech | 72,642 | 56.4% |
+| attested in the books | 62,087 | 48.2% |
 
-### Names are corrected, not just filtered
+### Proper names are deliberately out, for now
 
-Names are two fifths of what a Kazakh checker flags in running text, so the
-Wikipedia list cannot simply be refused for having supplied 868 of those 951
-duplicates. `tools/names.py` admits 23,981 names and rewrites 1,186 of them to
-the spelling the books show people using — `шынгыс` to `шыңғыс`, `казыбек` to
-`қазыбек`, `жумабаев` to `жұмабаев`, `тауке` to `тәуке`.
+Names are two fifths of what a Kazakh checker flags in running text, so they
+have to be solved eventually. They are not in this lexicon, because a name list
+solves that coverage problem by breaking the language's spelling.
 
-The corpus counts are case-folded, which makes the naive version of this
-actively harmful: the commonest word within one harmony edit of a name is
-usually not a name, and the first run "corrected" `али` to `әлі` (still), `ким`
-to `кім` (who) and `жана` to `жаңа` (new). A correction now has to land on
-something with independent reason to be a name — tagged as one by KazNERD in
-running text, or a name we already hold that is too rare to be a common word
-form — and may never land on common vocabulary at all.
+Kazakh documents legitimately carry both spellings of a name — the Kazakh one
+and the Russian-document transliteration — so neither can simply be refused.
+But admitting the transliterations costs more than names are worth. Of 23,981
+names from the available sources, **995 (4.1%) sit one harmony edit from an
+attested common word**, and they are the commonest words in the language:
+`болган` against `болған` in 3,236 of 3,860 books, `турган` against `тұрған`,
+`бари` against `бәрі`, `ким` against `кім`, `жана` against `жаңа`. Admitting
+those names makes the commonest misspelling of the commonest words impossible
+to flag.
 
-Where nothing can decide, the spelling stays as given. `сандыгуль` is still
-`сандыгуль`, because no source offers `сандыгүл` and inventing it would be
-exactly the failure this project exists to avoid.
+That is a problem about names, needing name-specific handling — a separate
+namespace, a capitalisation-aware corpus, an accepted-but-never-suggested tier
+— and none of it should be paid for by the ordinary vocabulary. Morphology
+first; names as their own case, later.
 
 ### Known gap
 
 The book frequency table is case-folded, so it cannot distinguish `Тұрсын` the
 name from `тұрсың` "you stand". Rebuilding it case-aware from the 3,860
-editions would let the name corrections use the corpus directly rather than
-leaning on KazNERD's 6,970 tagged types.
+editions is a precondition for handling names properly at all.
