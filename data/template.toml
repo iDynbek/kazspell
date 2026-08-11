@@ -1,0 +1,243 @@
+#  The Kazakh suffix template.
+#
+#  Kazakh suffixation is a fixed sequence of slots, not a set of rules with
+#  conditions. Every slot names a grammatical category, says where in the chain
+#  it sits, and lists the shapes it takes. A word form is a stem plus an
+#  ordered walk through this table; anything that is not such a walk is not a
+#  word.
+#
+#  This file is the specification, read by the assignment tools and by the
+#  engine, so the two cannot drift. Four things it can express that a Hunspell
+#  affix file cannot:
+#
+#  `order`    a slot may only be followed by one of strictly higher order, so
+#             `мектеп-тер-іміз-де` is a word and `*мектеп-де-тер` is not. No
+#             per-rule condition can see the difference; both suffixes are
+#             legal on the stem, and only their sequence is wrong.
+#
+#  `group`    slots sharing a group are mutually exclusive — a verb takes a
+#             participle or a converb or a finite tense, never two.
+#
+#  `requires` a slot may demand a feature of the entry. Only a transitive verb
+#             has a passive: `жаз` gives `жазылды`, `отыр` does not give
+#             `*отырылды`. This is the distinction apertium-kaz carries as
+#             V-TV against V-IV and hunspell-kk has no way to record.
+#
+#  `restart`  a slot may derive a new stem, on either track, after which the
+#             chain begins again. `бар` + `ған` is a participle that then
+#             inflects as a noun — `барғаным` — and `трансформация` + `ла` is a
+#             verb that then inflects as one. This is why a single flat list of
+#             suffixes cannot describe the language.
+#
+#  Allomorph lists are what grammar gives, not what a corpus happened to yield.
+#  Choosing between the shapes in a slot is phonology — harmony and voicing —
+#  and belongs to the engine, not here.
+
+[meta]
+version = 1
+
+# ─── Nominal derivation. Makes a new stem, so the chain restarts. ────────────
+
+[[slot]]
+id = "sozjasam"
+name = "сөзжасам"
+gloss = "derivation, noun to noun or adjective"
+track = "n"
+order = 10
+restart = "n"
+morphemes = [
+  "лық", "лік", "дық", "дік", "тық", "тік",
+  "шы", "ші", "шыл", "шіл",
+  "сыз", "сіз", "лы", "лі", "ды", "ді", "ты", "ті",
+  "дай", "дей", "тай", "тей", "ша", "ше",
+  "ғы", "гі", "қы", "кі",
+  "лас", "лес", "дас", "дес", "тас", "тес",
+  "ыңқы", "іңкі", "шық", "шік",
+]
+
+[[slot]]
+id = "etis_jasam"
+name = "етістік тудырушы жұрнақ"
+gloss = "denominal verb formation"
+track = "n"
+order = 10
+restart = "v"
+morphemes = [
+  "ла", "ле", "да", "де", "та", "те",
+  "лан", "лен", "дан", "ден", "тан", "тен",
+  "лас", "лес", "дас", "дес", "тас", "тес",
+  "лат", "лет", "дат", "дет", "тат", "тет",
+  "ландыр", "лендір",
+]
+
+# ─── Nominal inflection: көптік, тәуелдік, септік, жіктік, in that order. ────
+
+[[slot]]
+id = "koptik"
+name = "көптік жалғау"
+gloss = "plural"
+track = "n"
+order = 20
+morphemes = ["лар", "лер", "дар", "дер", "тар", "тер"]
+
+[[slot]]
+id = "tauelik"
+name = "тәуелдік жалғау"
+gloss = "possessive"
+track = "n"
+order = 30
+morphemes = [
+  "м", "ым", "ім", "ң", "ың", "ің", "ы", "і", "сы", "сі",
+  "мыз", "міз", "ымыз", "іміз", "ңыз", "ңіз", "ыңыз", "іңіз",
+  "ларың", "лерің", "дарың", "дерің", "тарың", "терің",
+  "ңдар", "ңдер", "ыңдар", "іңдер",
+]
+
+[[slot]]
+id = "septik"
+name = "септік жалғау"
+gloss = "case: ілік, барыс, табыс, жатыс, шығыс, көмектес"
+track = "n"
+order = 40
+morphemes = [
+  "ның", "нің", "дың", "дің", "тың", "тің",
+  "ға", "ге", "қа", "ке", "на", "не", "а", "е",
+  "ны", "ні", "ды", "ді", "ты", "ті", "н",
+  "да", "де", "та", "те", "нда", "нде",
+  "дан", "ден", "тан", "тен", "нан", "нен",
+  "мен", "бен", "пен", "менен", "бенен", "пенен",
+]
+
+[[slot]]
+id = "jiktik_n"
+name = "жіктік жалғау"
+gloss = "predicative person on a nominal"
+track = "n"
+order = 50
+morphemes = [
+  "мын", "мін", "бын", "бін", "пын", "пін",
+  "сың", "сің", "сыз", "сіз",
+  "мыз", "міз", "быз", "біз", "пыз", "піз",
+  "сыңдар", "сіңдер", "сыздар", "сіздер",
+]
+
+# ─── Verbal voice. The passive is the reason `requires` exists. ──────────────
+
+[[slot]]
+id = "etis_pass"
+name = "ырықсыз етіс"
+gloss = "passive"
+track = "v"
+order = 10
+requires = ["v-trans"]
+morphemes = ["ыл", "іл", "л", "ын", "ін", "н"]
+
+[[slot]]
+id = "etis_refl"
+name = "өздік етіс"
+gloss = "reflexive"
+track = "v"
+order = 11
+morphemes = ["ын", "ін", "н"]
+
+[[slot]]
+id = "etis_recip"
+name = "ортақ етіс"
+gloss = "reciprocal or joint"
+track = "v"
+order = 12
+morphemes = ["ыс", "іс", "с"]
+
+[[slot]]
+id = "etis_caus"
+name = "өзгелік етіс"
+gloss = "causative"
+track = "v"
+order = 13
+morphemes = ["дыр", "дір", "тыр", "тір", "ғыз", "гіз", "қыз", "кіз", "т", "ыт", "іт"]
+
+# ─── Negation, then exactly one of the finite/non-finite forms. ──────────────
+
+[[slot]]
+id = "bolymsyz"
+name = "болымсыздық жұрнағы"
+gloss = "negation"
+track = "v"
+order = 20
+morphemes = ["ма", "ме", "ба", "бе", "па", "пе"]
+
+[[slot]]
+id = "kosemshe"
+name = "көсемше"
+gloss = "converb"
+track = "v"
+order = 30
+group = "finiteness"
+morphemes = ["ып", "іп", "п", "а", "е", "й", "ғалы", "гелі", "қалы", "келі"]
+
+[[slot]]
+id = "esimshe"
+name = "есімше"
+gloss = "participle — inflects as a nominal afterwards"
+track = "v"
+order = 30
+group = "finiteness"
+restart = "n"
+morphemes = [
+  "ған", "ген", "қан", "кен",
+  "атын", "етін", "йтын", "йтін",
+  "ар", "ер", "р", "мақ", "мек", "бақ", "бек", "пақ", "пек",
+  "ушы", "уші", "ғыш", "гіш", "қыш", "кіш",
+]
+
+[[slot]]
+id = "tuiyq"
+name = "тұйық етістік"
+gloss = "verbal noun — inflects as a nominal afterwards"
+track = "v"
+order = 30
+group = "finiteness"
+restart = "n"
+morphemes = ["у"]
+
+[[slot]]
+id = "shaq"
+name = "шақ"
+gloss = "finite tense"
+track = "v"
+order = 30
+group = "finiteness"
+morphemes = ["ды", "ді", "ты", "ті", "ады", "еді", "йді", "айды", "ейді"]
+
+[[slot]]
+id = "rai"
+name = "рай"
+gloss = "mood: шартты, қалау, бұйрық"
+track = "v"
+order = 30
+group = "finiteness"
+# `-ғы/-гі` is the қалау рай of `барғым келеді`, spelt exactly like the nominal
+# `-ғы` of `жазғы`; `-ыңыз/-ыңдар` are second-person imperatives spelt exactly
+# like the possessives they are not. Both were read as errors when they were
+# missing from this list, and both took real forms out of the language with them.
+morphemes = [
+  "са", "се",
+  "йын", "йін", "айын", "ейін", "ғай", "гей", "қай", "кей",
+  "ғы", "гі", "қы", "кі",
+  "ыңыз", "іңіз", "ыңдар", "іңдер", "ңыз", "ңіз", "ңдар", "ңдер",
+  "шы", "ші", "ңызшы", "ңізші",
+]
+
+[[slot]]
+id = "jiktik_v"
+name = "жіктік жалғау"
+gloss = "predicative person on a verb"
+track = "v"
+order = 50
+morphemes = [
+  "мын", "мін", "бын", "бін", "пын", "пін",
+  "сың", "сің", "сыз", "сіз",
+  "мыз", "міз", "быз", "біз", "пыз", "піз",
+  "сыңдар", "сіңдер", "сыздар", "сіздер",
+  "ды", "ді",
+]

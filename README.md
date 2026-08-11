@@ -50,12 +50,43 @@ only way that dictionary stops being mined.
 Phase 1, per-lexeme paradigm assignment. Every entry has to say which families
 it takes; nothing downstream works until it does.
 
+    data/template.toml            the suffix template: 17 slots, their order,
+                                  their exclusions, the entry features they
+                                  require, and where a slot derives a new stem
+    tools/template.py             load it, refuse it if incoherent, answer the
+                                  two questions everything else asks
     tools/apertium_paradigms.py   lift 33,480 hand-assigned paradigms out of
                                   apertium-kaz's lexc, including the
                                   transitive/intransitive split that decides
                                   whether a passive can form at all
     tools/build_lexicon.py        assemble the wordlist from primary sources,
                                   refusing what should never have been let in
+    tests/test_template.py        26 cases: real forms the template must build,
+                                  real errors it must refuse
+
+### The template is the specification, not a table in a script
+
+Kazakh suffixation is a fixed sequence of slots. `data/template.toml` states it
+once, and both the assignment tools and the engine read it, so they cannot
+drift — hunspell-kk learned the same grammar three times, in the affix miner,
+the paradigm grids and the family classifier, and they disagreed enough that
+`-ғы` was a nominal suffix in one and the қалау рай in another.
+
+Four things it expresses that a Hunspell affix file cannot:
+
+- **order** — `мектеп-тер-іміз-де` is a word and `*мектеп-де-тер` is not, though
+  every suffix in it is legal on that stem. Only the sequence is wrong, and no
+  per-rule condition can see a sequence.
+- **group** — a verb takes a participle *or* a converb *or* a finite tense.
+- **requires** — only a transitive verb has a passive: `жаз` gives `жазылды`,
+  `отыр` does not give `*отырылды`.
+- **restart** — `бар`+`ған` is a participle that then inflects as a noun,
+  `барғаным`; `трансформация`+`ла` is a verb that then inflects as one.
+
+**57 of the 209 morphemes belong to more than one slot.** `ды` alone is
+сөзжасам, септік, шақ and жіктік. That is the whole argument against conditioning
+rules on the stem: the same string is four different morphemes, and only its
+position in the chain distinguishes them.
 
 ### The lexicon is rebuilt, not inherited
 
