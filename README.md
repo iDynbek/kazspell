@@ -72,16 +72,25 @@ it takes; nothing downstream works until it does.
 
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
-| catches misspellings | **97.5%** | 96.4% | 99.4% |
-| accepts real text | 76.9% | 98.1% | 82.1% |
+| catches misspellings | **97.1%** | 96.4% | 99.4% |
+| accepts real text | 80.2% | 98.1% | 82.1% |
+
+Measured on 20,000 attested types and 20,000 misspellings of them.
 
 Not comparable line for line — kazspell is scored on the book corpus by
 book-weight and hunspell-kk on KazNERD by token — but the shape is what the
 design predicted. Correct morphotactics buy precision immediately, on a lexicon
 carrying no names and with 43.6% of entries still lacking a part of speech.
-Recall is the open side, and it is open for reasons that are known rather than
-mysterious: no names, no vowel elision (`мойын` → `мойнына`, 1,389 books), and
-the corpus itself contains Russian that ought to be rejected.
+Recall is the open side, and open for reasons that are known rather than
+mysterious. Two stem alternations are now in — the closed class that drops a
+vowel (`мойын` → `мойнына`) and the voicing of a final stop before a vowel
+(`мектеп` → `мектебін`, `амандық` → `амандығын`) — and together they were worth
+3.3 points of book-weighted recall. What remains: no proper names, 43.6% of
+entries with no part of speech so the gated slots refuse them, and a corpus
+that contains Russian which ought to be rejected and counts against us anyway.
+
+Of 10,433 rejected forms, 38.2% carry a Kazakh-only letter and are certainly
+ours to fix; 3.5% carry `щ`, `ъ` or `э` and no Kazakh letter, and are Russian.
 
 ### The template is the specification, not a table in a script
 

@@ -61,6 +61,21 @@ def _b_set(initial: str) -> set[str]:
     return (VOWELS | VOICED) - _a_set(initial)
 
 
+# A stem-final voiceless stop voices before a vowel-initial suffix: `мектеп` is
+# `мектебі`, `амандық` is `амандығы`, `тілек` is `тілегі`. The surface a suffix
+# attaches to is therefore not the entry, and a recogniser that only ever looks
+# the entry up rejects `мектебін` — which it did, along with everything else
+# whose stem ends in one of these three letters.
+VOICING = {"б": "п", "ғ": "қ", "г": "к"}
+
+
+def devoice(stem: str) -> str | None:
+    """The entry a voiced surface stem could have come from."""
+    if stem and stem[-1] in VOICING:
+        return stem[:-1] + VOICING[stem[-1]]
+    return None
+
+
 # Suffixes whose vowels do not harmonise, so their vowels are no evidence about
 # the stem. Reading `-мен` as front made every stem carrying one look front.
 INVARIANT = {"мен", "бен", "пен", "менен", "бенен", "пенен",

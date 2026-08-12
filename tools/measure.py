@@ -25,7 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from analyse import Analyser, read_lexicon  # noqa: E402
+from analyse import Analyser, read_elision, read_lexicon  # noqa: E402
 from template import load  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -83,7 +83,8 @@ def main() -> int:
     args = ap.parse_args()
 
     attested = read_attested(args.attested)
-    an = Analyser(load(), read_lexicon(args.lexicon))
+    an = Analyser(load(), read_lexicon(args.lexicon),
+                  elision=read_elision(ROOT / "data/elision.tsv"))
     rng = random.Random(args.seed)
 
     pool = [w for w, n in attested.items() if n >= args.min_docs and len(w) > 1]

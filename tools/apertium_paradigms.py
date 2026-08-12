@@ -51,9 +51,17 @@ POS_OF = {
 PROPER = re.compile(r"^NP-")
 
 
-def parse(path: Path) -> dict[str, set[str]]:
-    """lemma -> the continuation lexicons it is filed under."""
+def parse(path: Path) -> tuple[dict[str, set[str]], dict[str, str]]:
+    """lemma -> its continuation lexicons, and lemma -> its elided stem.
+
+    A closed class of nouns drops the vowel of its last syllable before a
+    vowel-initial suffix: `мойын` is `мойны`, `халық` is `халқы`, `орын` is
+    `орны`. apertium-kaz marks them by spelling the surface with its `{y}`
+    archiphoneme — `мойын:мой%{y%}н` — so the list is hand-made and closed
+    rather than guessed at from the shape of the word.
+    """
     out: dict[str, set[str]] = collections.defaultdict(set)
+    elides: dict[str, str] = {}
     lexicon = None
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
@@ -75,7 +83,13 @@ def parse(path: Path) -> dict[str, set[str]]:
         if not re.match(r"^[A-Z][A-Za-z0-9_-]*$", cont):
             continue
         # `upper:lower` — the analysis side is the lemma we want. Unescape.
-        lemma = re.split(r"(?<!%):", form)[0]
+        sides = re.split(r"(?<!%):", form)
+        lemma = sides[0]
+        if len(sides) > 1 and "%{y%}" in sides[1]:
+            stem = re.sub(r"%(.)", r"\1", sides[1].replace("%{y%}", ""))
+            clean = re.sub(r"\{[^}]*\}", "", stem).strip()
+            if clean:
+                elides[re.sub(r"%(.)", r"\1", lemma).strip()] = clean
         lemma = re.sub(r"%(.)", r"\1", lemma).strip()
         # Continuation entries carry tags rather than lemmas — `+е<cop><aor>`,
         # `+лы<post>`. They are morphology, not vocabulary, and letting them
@@ -83,7 +97,7 @@ def parse(path: Path) -> dict[str, set[str]]:
         if not lemma or lemma.startswith(("<", "+")) or "<" in lemma:
             continue
         out[lemma].add(cont)
-    return out
+    return out, elides
 
 
 def pos_of(paradigms: set[str]) -> str:
@@ -112,7 +126,7 @@ def main() -> int:
 
     if not args.lexc.exists():
         sys.exit(f"no lexc at {args.lexc}")
-    entries = parse(args.lexc)
+    entries, elides = parse(args.lexc)
     print(f"{len(entries):,} lemmas, "
           f"{len({p for v in entries.values() for p in v}):,} paradigms",
           file=sys.stderr)
@@ -126,6 +140,13 @@ def main() -> int:
         "# lemma\tparadigms\tpos — from apertium-kaz's lexc, "
         "tools/apertium_paradigms.py\n"
         + "\n".join("\t".join(r) for r in rows) + "\n", encoding="utf-8")
+    elide_path = args.output.parent / "elision.tsv"
+    elide_path.write_text(
+        "# lemma\telided stem — the vowel of the last syllable drops before a\n"
+        "# vowel-initial suffix; hand-marked in apertium-kaz with its {y}\n"
+        + "\n".join(f"{k}\t{v}" for k, v in sorted(elides.items())) + "\n",
+        encoding="utf-8")
+    print(f"{len(elides)} eliding stems → {elide_path}", file=sys.stderr)
 
     dist = collections.Counter(r[2] for r in rows)
     print(f"\n{'part of speech':<22}{'lemmas':>8}")

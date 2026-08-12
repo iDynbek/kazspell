@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from phonology import fits  # noqa: E402
+from phonology import VOWELS, devoice, fits  # noqa: E402
 from template import Template, load  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -53,6 +53,25 @@ def read_lexicon(path: Path) -> dict[str, frozenset[str]]:
     return out
 
 
+def read_elision(path: Path) -> dict[str, str]:
+    """elided stem -> the lemma it belongs to.
+
+    A closed class drops the vowel of its last syllable before a vowel-initial
+    suffix: `мойын` is `мойны`, `халық` is `халқы`. The elided form is not a
+    word on its own and never stands without a suffix, and the suffix must be
+    the vowel-initial one that caused the elision — `мойында` is the plain stem
+    plus a locative, not `мойн` plus anything.
+    """
+    if not path.exists():
+        return {}
+    out = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.startswith("#"):
+            lemma, elided = line.split("\t")
+            out[elided] = lemma
+    return out
+
+
 def tracks_of(features: frozenset[str]) -> tuple[str, ...]:
     """Which template tracks an entry can start on."""
     verbal = {"v", "v-trans", "v-intrans", "v-aux"}
@@ -67,10 +86,12 @@ def tracks_of(features: frozenset[str]) -> tuple[str, ...]:
 
 class Analyser:
     def __init__(self, tpl: Template, lexicon: dict[str, frozenset[str]],
-                 overrides: dict[str, str] | None = None):
+                 overrides: dict[str, str] | None = None,
+                 elision: dict[str, str] | None = None):
         self.tpl = tpl
         self.lexicon = lexicon
         self.overrides = overrides or {}
+        self.elision = elision or {}
         self.max_morpheme = max(len(m) for m in tpl.by_morpheme)
 
     def analyse(self, word: str) -> list[list[str]]:
@@ -81,8 +102,22 @@ class Analyser:
         for cut in range(1, len(word) + 1):
             stem, rest = word[:cut], word[cut:]
             features = self.lexicon.get(stem)
+            elided_from = self.elision.get(stem)
+            if features is None and elided_from is not None:
+                features = self.lexicon.get(elided_from)
+            voiced_from = None
+            if features is None:
+                voiced_from = devoice(stem)
+                if voiced_from is not None:
+                    features = self.lexicon.get(voiced_from)
             if features is None:
                 continue
+            # An alternated stem is not a word on its own, and the alternation
+            # only happens because a vowel-initial suffix followed it.
+            if (elided_from is not None and stem not in self.lexicon) or \
+                    voiced_from is not None:
+                if not rest or rest[0] not in VOWELS:
+                    continue
             for track in tracks_of(features):
                 for path in self._walk(stem, rest, track, None, features):
                     reading = tuple([stem] + path)
@@ -121,7 +156,8 @@ class Analyser:
 
 @functools.lru_cache(maxsize=1)
 def default() -> Analyser:
-    return Analyser(load(), read_lexicon(ROOT / "data/lexicon.tsv"))
+    return Analyser(load(), read_lexicon(ROOT / "data/lexicon.tsv"),
+                    elision=read_elision(ROOT / "data/elision.tsv"))
 
 
 def main() -> int:
@@ -133,7 +169,8 @@ def main() -> int:
     ap.add_argument("--lexicon", type=Path, default=ROOT / "data/lexicon.tsv")
     args = ap.parse_args()
 
-    an = Analyser(load(), read_lexicon(args.lexicon))
+    an = Analyser(load(), read_lexicon(args.lexicon),
+                  elision=read_elision(ROOT / "data/elision.tsv"))
     bad = 0
     for word in args.words:
         readings = an.analyse(word)
