@@ -24,6 +24,12 @@ LEGAL = [
     ("баламын",         "n", ["jiktik_n"]),
     ("қалалардың",      "n", ["koptik", "septik"]),
     ("достығымыз",      "n", ["sozjasam", "tauelik"]),
+    # The attributive attaches after the case, not before it, and the result
+    # inflects again: үй-де-гі-лер-дің.
+    ("үйдегі",          "n", ["septik", "attr"]),
+    ("үйдегілердің",    "n", ["septik", "attr", "koptik", "septik"]),
+    ("әкемдікі",        "n", ["tauelik", "tauelik_of"]),
+    ("менікін",         "n", ["tauelik_of", "septik"]),
     # A participle becomes a nominal and inflects as one: бар-ған-ым.
     ("барғаным",        "v", ["esimshe", "tauelik"]),
     ("барғандардың",    "v", ["esimshe", "koptik", "septik"]),

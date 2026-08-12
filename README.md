@@ -83,7 +83,26 @@ Four things it expresses that a Hunspell affix file cannot:
 - **restart** — `бар`+`ған` is a participle that then inflects as a noun,
   `барғаным`; `трансформация`+`ла` is a verb that then inflects as one.
 
-**57 of the 209 morphemes belong to more than one slot.** `ды` alone is
+`tools/check_template.py` holds it against apertium-kaz's hand-written grammar,
+expanding that grammar's archiphoneme spellings — `%<pl%>:%>%{L%}%{A%}р` is the
+whole plural in one line — into an inventory somebody else decided, years ago,
+for their own reasons. It found six families of real gaps, several of them
+everyday forms: the third-person imperative `-сын` (`барсын`), the first-plural
+`-айық` (`барайық`), the converb `-ғанша`, the intent participle `-мақшы`, the
+fused negative aorist `-мас`, and the possessive-of `-нікі`.
+
+It also found a gap in the *order* rather than the inventory. `-ғы` was filed
+with the other derivation at order 10, where nothing following септік could
+reach it — so `үйдегі`, `ондағы` and `бүгінгі` were unbuildable, and `әкемдікі`
+with it. Both now sit after inflection, at orders 44 and 45, and restart the
+chain.
+
+What is left is 2 forms, both single letters that fall out of a continuation
+entry rather than being morphemes, and 23 combinations apertium spells as one
+entry that the template composes from slots — which is the difference the order
+exists to express.
+
+**57 of the 235 morphemes belong to more than one slot.** `ды` alone is
 сөзжасам, септік, шақ and жіктік. That is the whole argument against conditioning
 rules on the stem: the same string is four different morphemes, and only its
 position in the chain distinguishes them.

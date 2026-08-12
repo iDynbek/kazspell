@@ -91,6 +91,7 @@ morphemes = [
   "мыз", "міз", "ымыз", "іміз", "ңыз", "ңіз", "ыңыз", "іңіз",
   "ларың", "лерің", "дарың", "дерің", "тарың", "терің",
   "ңдар", "ңдер", "ыңдар", "іңдер",
+  "ыңыздар", "іңіздер", "ңыздар", "ңіздер",   # балаңыздар, after a vowel
 ]
 
 [[slot]]
@@ -107,6 +108,31 @@ morphemes = [
   "дан", "ден", "тан", "тен", "нан", "нен",
   "мен", "бен", "пен", "менен", "бенен", "пенен",
 ]
+
+# Two nominal suffixes that attach *after* inflection, not before it. Filing
+# them with the other derivation put them at order 10, where nothing that
+# follows септік or тәуелдік can reach them — and `үйдегі`, `ондағы`, `бүгінгі`
+# and `әкемдікі` are ordinary words. apertium-kaz spells the combinations out
+# as single entries (`дағы`, `дегі`, `дікі`); here they compose, which is the
+# whole point of having an order.
+
+[[slot]]
+id = "attr"
+name = "қатыстық сын есім жұрнағы"
+gloss = "attributive: the one at, in or of — үйдегі, ондағы, бүгінгі"
+track = "n"
+order = 44
+restart = "n"
+morphemes = ["ғы", "гі", "қы", "кі"]
+
+[[slot]]
+id = "tauelik_of"
+name = "тәуелдік жалғаудың -нікі түрі"
+gloss = "possessive-of, making a nominal: менікі, әкемдікі"
+track = "n"
+order = 45
+restart = "n"
+morphemes = ["нікі", "дікі", "тікі"]
 
 [[slot]]
 id = "jiktik_n"
@@ -173,7 +199,11 @@ gloss = "converb"
 track = "v"
 order = 30
 group = "finiteness"
-morphemes = ["ып", "іп", "п", "а", "е", "й", "ғалы", "гелі", "қалы", "келі"]
+morphemes = [
+  "ып", "іп", "п", "а", "е", "й",
+  "ғалы", "гелі", "қалы", "келі",
+  "ғанша", "генше", "қанша", "кенше",   # `барғанша` — until doing
+]
 
 [[slot]]
 id = "esimshe"
@@ -187,6 +217,10 @@ morphemes = [
   "ған", "ген", "қан", "кен",
   "атын", "етін", "йтын", "йтін",
   "ар", "ер", "р", "мақ", "мек", "бақ", "бек", "пақ", "пек",
+  "мақшы", "мекші", "бақшы", "бекші", "пақшы", "пекші",   # `бармақшы` — intent
+  # The negative aorist is fused: `алмас`, `болмас`, `айтпас`. It is not
+  # болымсыздық followed by anything the template can reach separately.
+  "мас", "мес", "бас", "бес", "пас", "пес",
   "ушы", "уші", "ғыш", "гіш", "қыш", "кіш",
 ]
 
@@ -207,7 +241,7 @@ gloss = "finite tense"
 track = "v"
 order = 30
 group = "finiteness"
-morphemes = ["ды", "ді", "ты", "ті", "ады", "еді", "йді", "айды", "ейді"]
+morphemes = ["ды", "ді", "ты", "ті", "ады", "еді", "йды", "йді", "айды", "ейді"]
 
 [[slot]]
 id = "rai"
@@ -223,6 +257,9 @@ group = "finiteness"
 morphemes = [
   "са", "се",
   "йын", "йін", "айын", "ейін", "ғай", "гей", "қай", "кей",
+  # бұйрық рай, third person and first plural: `барсын`, `барайық`. Both were
+  # absent, and both are everyday forms — apertium-kaz has carried them all along.
+  "сын", "сін", "айық", "ейік",
   "ғы", "гі", "қы", "кі",
   "ыңыз", "іңіз", "ыңдар", "іңдер", "ңыз", "ңіз", "ңдар", "ңдер",
   "шы", "ші", "ңызшы", "ңізші",
