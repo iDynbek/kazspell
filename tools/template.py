@@ -37,6 +37,7 @@ class Slot:
     group: str | None = None
     requires: tuple[str, ...] = ()
     restart: str | None = None
+    after: tuple[str, ...] = ()
 
 
 @dataclass
@@ -71,12 +72,17 @@ class Template:
 
     def may_follow(self, first: Slot, then: Slot) -> bool:
         """Whether `then` may attach after `first` within one stem's chain."""
+        if then.after and first.id not in then.after:
+            return False
         if first.restart:
             return then.track == first.restart      # the chain began again
         if then.track != first.track:
             return False
         if first.group and first.group == then.group:
             return False                            # one of the group, not two
+        # `-нан` is the ablative a possessive leaves behind, and only that.
+        if then.after and first.id not in then.after:
+            return False
         return then.order > first.order
 
 
@@ -87,7 +93,7 @@ def load(path: Path | None = None) -> Template:
         id=s["id"], name=s["name"], gloss=s["gloss"], track=s["track"],
         order=s["order"], morphemes=tuple(s["morphemes"]),
         group=s.get("group"), requires=tuple(s.get("requires", ())),
-        restart=s.get("restart"),
+        restart=s.get("restart"), after=tuple(s.get("after", ())),
     ) for s in raw["slot"])
     problems = check(slots)
     if problems:
@@ -114,6 +120,9 @@ def check(slots: tuple[Slot, ...]) -> list[str]:
             problems.append(f"{slot.id}: repeated morphemes {dupes}")
         if slot.restart and slot.restart not in ("n", "v"):
             problems.append(f"{slot.id}: restart {slot.restart!r} is not n or v")
+        for other in slot.after:
+            if other not in {x.id for x in slots}:
+                problems.append(f"{slot.id}: after names unknown slot {other!r}")
     # A group whose members sit at different orders is not a choice between
     # them; the order would decide, and the exclusivity would never be reached.
     groups = collections.defaultdict(set)

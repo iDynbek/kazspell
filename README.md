@@ -61,8 +61,27 @@ it takes; nothing downstream works until it does.
                                   whether a passive can form at all
     tools/build_lexicon.py        assemble the wordlist from primary sources,
                                   refusing what should never have been let in
-    tests/test_template.py        26 cases: real forms the template must build,
+    tools/phonology.py            which shape a suffix takes on a given stem
+    tools/analyse.py              the reference recogniser: stem plus a legal
+                                  walk, in the shapes the stem licenses
+    tools/measure.py              recall on the books, precision on typos
+    tests/test_template.py        32 cases: real forms the template must build,
                                   real errors it must refuse
+
+### First measurement of the architecture
+
+| | kazspell | hunspell-kk v0.3.0 | 2009 release |
+|---|---|---|---|
+| catches misspellings | **97.5%** | 96.4% | 99.4% |
+| accepts real text | 76.9% | 98.1% | 82.1% |
+
+Not comparable line for line — kazspell is scored on the book corpus by
+book-weight and hunspell-kk on KazNERD by token — but the shape is what the
+design predicted. Correct morphotactics buy precision immediately, on a lexicon
+carrying no names and with 43.6% of entries still lacking a part of speech.
+Recall is the open side, and it is open for reasons that are known rather than
+mysterious: no names, no vowel elision (`мойын` → `мойнына`, 1,389 books), and
+the corpus itself contains Russian that ought to be rejected.
 
 ### The template is the specification, not a table in a script
 

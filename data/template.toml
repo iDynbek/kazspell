@@ -94,20 +94,110 @@ morphemes = [
   "ыңыздар", "іңіздер", "ңыздар", "ңіздер",   # балаңыздар, after a vowel
 ]
 
+# Each case is its own slot, sharing an order and a group so exactly one of
+# them can appear. Lumping them into a single септік slot hid the fact that
+# their alternations are different — `-лар/-дар/-тар` spreads over three
+# groups, `-да/-та` over two — and the phonology, which reads the series off
+# the slot, could not tell them apart. `қалада` was refused for it.
+#
+# The `-н` variants attach only after a possessive: `қаласы-нан`, never
+# `*қала-нан`. `after` is what says so; without it both `қаладан` and
+# `*қаланан` are licensed, because a possessive leaves a vowel-final stem and
+# the plain allomorph fits one too.
+
 [[slot]]
-id = "septik"
-name = "септік жалғау"
-gloss = "case: ілік, барыс, табыс, жатыс, шығыс, көмектес"
+id = "ilik"
+name = "ілік септік"
+gloss = "genitive"
 track = "n"
 order = 40
-morphemes = [
-  "ның", "нің", "дың", "дің", "тың", "тің",
-  "ға", "ге", "қа", "ке", "на", "не", "а", "е",
-  "ны", "ні", "ды", "ді", "ты", "ті", "н",
-  "да", "де", "та", "те", "нда", "нде",
-  "дан", "ден", "тан", "тен", "нан", "нен",
-  "мен", "бен", "пен", "менен", "бенен", "пенен",
-]
+group = "septik"
+morphemes = ["ның", "нің", "дың", "дің", "тың", "тің"]
+
+[[slot]]
+id = "barys"
+name = "барыс септік"
+gloss = "dative"
+track = "n"
+order = 40
+group = "septik"
+morphemes = ["ға", "ге", "қа", "ке"]
+
+[[slot]]
+id = "barys_px"
+name = "барыс септік (тәуелдіктен кейін)"
+gloss = "dative after a possessive"
+track = "n"
+order = 40
+group = "septik"
+after = ["tauelik"]
+morphemes = ["на", "не", "а", "е"]
+
+[[slot]]
+id = "tabys"
+name = "табыс септік"
+gloss = "accusative"
+track = "n"
+order = 40
+group = "septik"
+morphemes = ["ны", "ні", "ды", "ді", "ты", "ті"]
+
+[[slot]]
+id = "tabys_px"
+name = "табыс септік (тәуелдіктен кейін)"
+gloss = "accusative after a possessive"
+track = "n"
+order = 40
+group = "septik"
+after = ["tauelik"]
+morphemes = ["н"]
+
+[[slot]]
+id = "jatys"
+name = "жатыс септік"
+gloss = "locative"
+track = "n"
+order = 40
+group = "septik"
+morphemes = ["да", "де", "та", "те"]
+
+[[slot]]
+id = "jatys_px"
+name = "жатыс септік (тәуелдіктен кейін)"
+gloss = "locative after a possessive"
+track = "n"
+order = 40
+group = "septik"
+after = ["tauelik"]
+morphemes = ["нда", "нде"]
+
+[[slot]]
+id = "shygys"
+name = "шығыс септік"
+gloss = "ablative"
+track = "n"
+order = 40
+group = "septik"
+morphemes = ["дан", "ден", "тан", "тен"]
+
+[[slot]]
+id = "shygys_px"
+name = "шығыс септік (тәуелдіктен кейін)"
+gloss = "ablative after a possessive"
+track = "n"
+order = 40
+group = "septik"
+after = ["tauelik"]
+morphemes = ["нан", "нен"]
+
+[[slot]]
+id = "komektes"
+name = "көмектес септік"
+gloss = "instrumental — invariant, it does not harmonise"
+track = "n"
+order = 40
+group = "septik"
+morphemes = ["мен", "бен", "пен", "менен", "бенен", "пенен"]
 
 # Two nominal suffixes that attach *after* inflection, not before it. Filing
 # them with the other derivation put them at order 10, where nothing that

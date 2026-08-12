@@ -19,22 +19,22 @@ from template import load  # noqa: E402
 # (word, starting track, slot sequence) — sequences the template must permit.
 LEGAL = [
     # мектеп-тер-іміз-де: the form the whole two-level design existed to reach.
-    ("мектептерімізде", "n", ["koptik", "tauelik", "septik"]),
-    ("баламен",         "n", ["septik"]),
+    ("мектептерімізде", "n", ["koptik", "tauelik", "jatys"]),
+    ("баламен",         "n", ["komektes"]),
     ("баламын",         "n", ["jiktik_n"]),
-    ("қалалардың",      "n", ["koptik", "septik"]),
+    ("қалалардың",      "n", ["koptik", "ilik"]),
     ("достығымыз",      "n", ["sozjasam", "tauelik"]),
     # The attributive attaches after the case, not before it, and the result
     # inflects again: үй-де-гі-лер-дің.
-    ("үйдегі",          "n", ["septik", "attr"]),
-    ("үйдегілердің",    "n", ["septik", "attr", "koptik", "septik"]),
+    ("үйдегі",          "n", ["jatys", "attr"]),
+    ("үйдегілердің",    "n", ["jatys", "attr", "koptik", "ilik"]),
     ("әкемдікі",        "n", ["tauelik", "tauelik_of"]),
-    ("менікін",         "n", ["tauelik_of", "septik"]),
+    ("менікін",         "n", ["tauelik_of", "tabys"]),
     # A participle becomes a nominal and inflects as one: бар-ған-ым.
     ("барғаным",        "v", ["esimshe", "tauelik"]),
-    ("барғандардың",    "v", ["esimshe", "koptik", "septik"]),
+    ("барғандардың",    "v", ["esimshe", "koptik", "ilik"]),
     # A verbal noun does the same: оқу-ы-на.
-    ("оқуына",          "v", ["tuiyq", "tauelik", "septik"]),
+    ("оқуына",          "v", ["tuiyq", "tauelik", "barys_px"]),
     # Voice, then negation, then a finite tense.
     ("жазылды",         "v", ["etis_pass", "shaq"]),
     ("жазылмады",       "v", ["etis_pass", "bolymsyz", "shaq"]),
@@ -50,7 +50,7 @@ LEGAL = [
 
 # Sequences the template must refuse, and why.
 ILLEGAL = [
-    ("*мектепдетер",  "n", ["septik", "koptik"],
+    ("*мектепдетер",  "n", ["jatys", "koptik"],
      "көптік comes before септік, never after"),
     ("*баламызлар",   "n", ["tauelik", "koptik"],
      "тәуелдік comes after көптік"),
@@ -64,6 +64,10 @@ ILLEGAL = [
      "a finite tense does not attach to a noun"),
     ("*жаздылар",     "v", ["shaq", "koptik"],
      "көптік is nominal and шақ does not restart the chain"),
+    ("*қаланан",      "n", ["shygys_px"],
+     "the -н ablative appears only after a possessive"),
+    ("*үйдесі",       "n", ["jatys", "tauelik"],
+     "тәуелдік comes before септік, not after"),
 ]
 
 # Only a transitive verb has a passive.
@@ -85,6 +89,8 @@ def walk(tpl, track, ids, features=frozenset()):
         if slot.requires and not set(slot.requires) <= features:
             return False, f"{slot_id} requires {slot.requires}"
         if prev is None:
+            if slot.after:
+                return False, f"{slot_id} may only follow {slot.after}"
             if slot.track != track:
                 return False, f"{slot_id} is track {slot.track}, not {track}"
         elif not tpl.may_follow(prev, slot):
