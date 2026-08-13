@@ -79,6 +79,7 @@ gloss = "plural"
 track = "n"
 order = 20
 morphemes = ["лар", "лер", "дар", "дер", "тар", "тер"]
+a_after = ["vowel", "glide", "r"]   # балалар, таулар, үйлер, қарлар
 
 [[slot]]
 id = "tauelik"
@@ -113,6 +114,9 @@ track = "n"
 order = 40
 group = "septik"
 morphemes = ["ның", "нің", "дың", "дің", "тың", "тің"]
+# A nasal takes `-ның` here and `-ды` in the accusative, on the same
+# alternation. Only the slot can say which, so it does.
+a_after = ["vowel", "nasal"]        # қаланың, жанның — but таудың, елдің
 
 [[slot]]
 id = "barys"
@@ -141,6 +145,7 @@ track = "n"
 order = 40
 group = "septik"
 morphemes = ["ны", "ні", "ды", "ді", "ты", "ті"]
+a_after = ["vowel"]                 # қаланы, but жанды, тауды, елді
 
 [[slot]]
 id = "tabys_px"
@@ -178,7 +183,11 @@ gloss = "ablative"
 track = "n"
 order = 40
 group = "septik"
-morphemes = ["дан", "ден", "тан", "тен"]
+# `-нан/-нен` is the ablative after a nasal — `құмнан`, `әлемнен`, `жаннан`,
+# `күннен` — and it was missing, so every noun ending in one lost its ablative.
+# It is not the `-нан` of `shygys_px`, which follows a possessive and a vowel.
+morphemes = ["дан", "ден", "тан", "тен", "нан", "нен"]
+a_after = ["nasal"]                 # жаннан, but қаладан, таудан, елден
 
 [[slot]]
 id = "shygys_px"
@@ -198,6 +207,7 @@ track = "n"
 order = 40
 group = "septik"
 morphemes = ["мен", "бен", "пен", "менен", "бенен", "пенен"]
+a_after = ["vowel", "glide", "r", "liquid", "nasal"]   # таумен, елмен, жанмен
 
 # Two nominal suffixes that attach *after* inflection, not before it. Filing
 # them with the other derivation put them at order 10, where nothing that
@@ -223,6 +233,7 @@ track = "n"
 order = 45
 restart = "n"
 morphemes = ["нікі", "дікі", "тікі"]
+a_after = ["vowel"]                 # менікі, оныкі — but әкемдікі
 
 [[slot]]
 id = "jiktik_n"

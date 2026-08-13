@@ -23,6 +23,10 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import phonology  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -38,6 +42,10 @@ class Slot:
     requires: tuple[str, ...] = ()
     restart: str | None = None
     after: tuple[str, ...] = ()
+    # Which stem-final classes the alternation's A-member follows. The letter
+    # cannot say: `-ның` and `-ны` alternate identically and divide the finals
+    # differently. See tools/phonology.py.
+    a_after: tuple[str, ...] = ()
 
 
 @dataclass
@@ -94,6 +102,7 @@ def load(path: Path | None = None) -> Template:
         order=s["order"], morphemes=tuple(s["morphemes"]),
         group=s.get("group"), requires=tuple(s.get("requires", ())),
         restart=s.get("restart"), after=tuple(s.get("after", ())),
+        a_after=tuple(s.get("a_after", ())),
     ) for s in raw["slot"])
     problems = check(slots)
     if problems:
@@ -123,6 +132,15 @@ def check(slots: tuple[Slot, ...]) -> list[str]:
         for other in slot.after:
             if other not in {x.id for x in slots}:
                 problems.append(f"{slot.id}: after names unknown slot {other!r}")
+        for cls in slot.a_after:
+            if cls not in phonology.CLASSES:
+                problems.append(f"{slot.id}: a_after names unknown class {cls!r}")
+        # Declaring what the A-member follows, in a slot that has no A-member,
+        # is a statement about nothing and means the slot has been misread.
+        if slot.a_after and not any(m[:1] in phonology.A_INITIALS
+                                    for m in slot.morphemes):
+            problems.append(f"{slot.id}: a_after, but no morpheme starts with "
+                            f"one of {''.join(sorted(phonology.A_INITIALS))}")
     # A group whose members sit at different orders is not a choice between
     # them; the order would decide, and the exclusivity would never be reached.
     groups = collections.defaultdict(set)

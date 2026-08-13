@@ -143,7 +143,8 @@ class Analyser:
                     continue
                 if slot.requires and not set(slot.requires) <= features:
                     continue
-                if not fits(surface, morpheme, slot.morphemes, self.overrides):
+                if not fits(surface, morpheme, slot.morphemes, self.overrides,
+                            slot.a_after):
                     continue
                 nxt = slot.restart or slot.track
                 for tail in self._walk(surface + morpheme, rest[cut:],

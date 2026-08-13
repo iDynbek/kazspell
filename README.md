@@ -67,13 +67,15 @@ it takes; nothing downstream works until it does.
     tools/measure.py              recall on the books, precision on typos
     tests/test_template.py        32 cases: real forms the template must build,
                                   real errors it must refuse
+    tests/test_phonology.py       65 cases: which allomorph each slot takes on
+                                  a given stem, decided by the books
 
 ### First measurement of the architecture
 
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
-| catches misspellings | **97.1%** | 96.4% | 99.4% |
-| accepts real text | 80.2% | 98.1% | 82.1% |
+| catches misspellings | **96.9%** | 96.4% | 99.4% |
+| accepts real text | 82.9% | 98.1% | 82.1% |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
 
@@ -82,15 +84,21 @@ book-weight and hunspell-kk on KazNERD by token — but the shape is what the
 design predicted. Correct morphotactics buy precision immediately, on a lexicon
 carrying no names and with 43.6% of entries still lacking a part of speech.
 Recall is the open side, and open for reasons that are known rather than
-mysterious. Two stem alternations are now in — the closed class that drops a
-vowel (`мойын` → `мойнына`) and the voicing of a final stop before a vowel
-(`мектеп` → `мектебін`, `амандық` → `амандығын`) — and together they were worth
-3.3 points of book-weighted recall. What remains: no proper names, 43.6% of
-entries with no part of speech so the gated slots refuse them, and a corpus
-that contains Russian which ought to be rejected and counts against us anyway.
+mysterious. Two stem alternations are in — the closed class that drops a vowel
+(`мойын` → `мойнына`) and the voicing of a final stop before a vowel (`мектеп`
+→ `мектебін`, `амандық` → `амандығын`) — worth 3.3 points of book-weighted
+recall between them, and the four allomorph defects below were worth 2.7 more.
 
-Of 10,433 rejected forms, 38.2% carry a Kazakh-only letter and are certainly
-ours to fix; 3.5% carry `щ`, `ъ` or `э` and no Kazakh letter, and are Russian.
+What remains, in the order the misses say to take it: the personal endings that
+follow the past and the conditional (`бастады-қ`, `кір-се-м`, `қал-ар-мыз`),
+which are a different жіктік series from `-мын/-сың` and are not in the
+template at all; then the proper names; then the part of speech.
+
+Of 9,219 rejected forms, 29.3% of the book-weight carries a Kazakh-only letter
+and is certainly ours to fix. 67.0% carries no Kazakh letter at all and is
+mostly Russian — `которую`, `последний`, `отказаться` — which the checker ought
+to reject and which counts against recall anyway. Until the corpus is filtered,
+that share is a floor on this number rather than a defect in the model.
 
 ### The template is the specification, not a table in a script
 
@@ -134,6 +142,46 @@ exists to express.
 сөзжасам, септік, шақ and жіктік. That is the whole argument against conditioning
 rules on the stem: the same string is four different morphemes, and only its
 position in the chain distinguishes them.
+
+### The books decide which allomorph, not the letter
+
+Four defects in the phonology, each of which took a whole class of ordinary
+words out of the language, and each caught by asking the 3,860 editions rather
+than by reading a grammar.
+
+- **The genitive and the accusative alternate on the same `н`/`д`/`т` and
+  divide the finals differently.** After a nasal the genitive is `-ның` and the
+  accusative is `-ды`: `жанның` in 1,392 books, `жанды` in 1,851. The series
+  were being read off the A-member's initial consonant, so one letter had to
+  answer for both, and the accusative was the one it got wrong — `жанны`,
+  attested 9 times against 1,851, was the licensed form and `жанды` was
+  refused. Each slot now states what its A-member follows, as `a_after`.
+
+- **`у` and `и` spell glides, not vowels.** A stem ending in one is
+  consonant-final: `тауды` not `*тауны` (757 books against 3), `тауым` not
+  `*таум` (215 against 0), `таксиді` not `*таксиды`. Treating `у` as a vowel
+  cost the accusative, the genitive and every vowel-initial possessive of every
+  stem ending in it. `ю` behaves the same way and `я` does not — it ends in
+  /a/, and `армияны` is vowel-final.
+
+- **The ablative after a nasal was missing outright.** `-нан/-нен` was in the
+  template only as the form that follows a possessive, so `құмнан` (222 books),
+  `әлемнен` (289) and `күннен` (1,805) were unbuildable — every noun ending in
+  a nasal had no ablative at all.
+
+- **A word-final `у` carries no harmony.** `келуге` is front and `оқуға` is
+  back, so the тұйық етістік takes the column of the stem under it; reading it
+  as a back vowel put every verbal noun in the wrong one. Anywhere else `у` is
+  an ordinary back vowel, which is what makes `институтқа` back on its `у`
+  rather than front on its `и`. `я`, `ю` and `и` belonged to no harmony class
+  at all, so `армия`, `аю` and `такси` took both columns of every suffix.
+
+The first of these is why the design changed. "The series are not declared —
+they are read off the template" held until two slots turned out to alternate
+identically and partition the finals differently, at which point the letter
+`н` could not carry the answer for both. `a_after` says it per slot instead,
+which is a declaration, and `tools/template.py` refuses one on a slot that has
+no A-member to declare it for.
 
 ### The lexicon is rebuilt, not inherited
 

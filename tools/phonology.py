@@ -11,10 +11,11 @@ Which finals license which shape is not one table. `-лар` follows a vowel and
 `-дар`. Assuming a single three-way split rejected `жыланның`, in 422 of 3,860
 books, and every word shaped like it.
 
-So the series are not declared — they are read off the template. Morphemes in a
-slot that differ only in their first consonant are one alternation, and their
-number decides how the groups divide. Adding an allomorph to `template.toml`
-therefore cannot leave the phonology out of step with it.
+Morphemes in a slot that differ only in their first consonant are one
+alternation; which finals each member follows is stated by the slot, in
+`a_after`, because the letter cannot carry it. The genitive and the accusative
+both alternate `н`/`д`/`т` and they divide the finals differently — `жанның`
+but `жанды` — so nothing about the letter `н` predicts either one.
 """
 
 from __future__ import annotations
@@ -22,43 +23,53 @@ from __future__ import annotations
 import collections
 import functools
 
-BACK = set("аоұыу")
-FRONT = set("әөүіеё")
-VOWELS = BACK | FRONT
+# Kazakh spells two glides with letters that also spell vowels: `у` is /w/ in
+# `тау` and `и` is /j/ in `такси`, and `ю` ends in /w/ too. A stem ending in one
+# takes the consonant-final shape — `тауды` not `*тауны`, `тауым` not `*таум` —
+# so they are not vowels for the purpose of picking a suffix. `я` is not one of
+# them: it ends in /a/, and `армияны` behaves as vowel-final.
+VOWELS = set("аәоөұүыіеёя")
+GLIDES = set("уийю")
 
 # Kazakh does not have one three-way split, it has several, and which one
-# applies is decided by the series itself. The plural takes `-лар` after a
-# vowel but `-дар` after `л`: `балалар`, `елдер`. The genitive takes `-ның`
-# after a nasal where the plural takes `-дар`: `жыланның`, `жыландар`. The
-# instrumental counts every sonorant as one group. Assuming a single partition
-# rejected `жыланның` — 422 of 3,860 books — and every word like it.
+# applies is not recoverable from the alternation's letters. The plural takes
+# `-лар` after a vowel but `-дар` after `л`: `балалар`, `елдер`. The genitive
+# takes `-ның` after a nasal where the plural takes `-дар`: `жыланның`,
+# `жыландар`. And the accusative alternates on the very same `н`/`д`/`т` as the
+# genitive while dividing the finals differently — `жанның` against `жанды`,
+# 1,392 books against 1,851 — so reading the partition off the letter `н` gets
+# one of the two wrong whichever way it is written.
 #
-# So the partition is chosen by the A-member's initial consonant, which is what
-# names the series.
+# So each slot states what its A-member follows, as `a_after` in the template,
+# in these classes. The B-member takes the rest of the voiced finals and the
+# C-member the voiceless ones, which do follow from the alternation.
 A_INITIALS = set("лнмс")
 B_INITIALS = set("дбғг")
 C_INITIALS = set("тпқк")
 
-SONORANT_RUJ = set("руй")
-SONORANT_L = set("л")
+RHOTIC = set("р")
+LIQUID = set("л")
 NASAL = set("мнң")
 FRICATIVE = set("жз")
-VOICED = SONORANT_RUJ | SONORANT_L | NASAL | FRICATIVE
+VOICED = GLIDES | RHOTIC | LIQUID | NASAL | FRICATIVE
+
+CLASSES = {"vowel": VOWELS, "glide": GLIDES, "r": RHOTIC, "liquid": LIQUID,
+           "nasal": NASAL, "fricative": FRICATIVE}
 
 # Everything else that ends a word is voiceless for this purpose, б в г д
 # included: they devoice finally, so `клуб` takes `клубқа`.
 def _a_set(initial: str) -> set[str]:
     if initial == "л":
-        return VOWELS | SONORANT_RUJ
+        return VOWELS | GLIDES | RHOTIC
     if initial in "нс":
         return VOWELS | (NASAL if initial == "н" else set())
     if initial == "м":
-        return VOWELS | SONORANT_RUJ | SONORANT_L | NASAL
+        return VOWELS | GLIDES | RHOTIC | LIQUID | NASAL
     return VOWELS
 
 
-def _b_set(initial: str) -> set[str]:
-    return (VOWELS | VOICED) - _a_set(initial)
+def _b_set(a_set: set[str]) -> set[str]:
+    return (VOWELS | VOICED) - a_set
 
 
 # A stem-final voiceless stop voices before a vowel-initial suffix: `мектеп` is
@@ -79,16 +90,32 @@ def devoice(stem: str) -> str | None:
 # Suffixes whose vowels do not harmonise, so their vowels are no evidence about
 # the stem. Reading `-мен` as front made every stem carrying one look front.
 INVARIANT = {"мен", "бен", "пен", "менен", "бенен", "пенен",
-             "нікі", "дікі", "тікі"}
+             "нікі", "дікі", "тікі",
+             "у"}   # the тұйық етістік: `келу` is front, `оқу` is back
+
+
+# Harmony classes. `и`, `я` and `ю` belonged to neither, so `такси`, `армия`
+# and `аю` had no harmony at all and took both columns of every suffix.
+BACK = set("аоұыуяю")
+FRONT = set("әөүіеёи")
 
 
 def harmony(word: str) -> str | None:
-    for ch in reversed(word):
+    """Which column of a suffix this stem takes, from its last vowel.
+
+    A word-final `у` is not that vowel. `келуге` is front and `оқуға` is back,
+    so the тұйық етістік carries no harmony of its own and the stem under it
+    decides; reading it as back put every verbal noun in the wrong column. In
+    any other position `у` is an ordinary back vowel — `институтқа`, not
+    `*институтке` — and when it is the only one the word is back: `суға`.
+    """
+    stem = word[:-1] if word.endswith("у") else word
+    for ch in reversed(stem):
         if ch in BACK:
             return "back"
         if ch in FRONT:
             return "front"
-    return None
+    return "back" if stem != word else None
 
 
 def morpheme_harmony(morpheme: str) -> str | None:
@@ -96,13 +123,19 @@ def morpheme_harmony(morpheme: str) -> str | None:
 
 
 @functools.lru_cache(maxsize=None)
-def series_finals(morphemes: tuple[str, ...]) -> dict[str, frozenset[str]]:
-    """morpheme -> the stem-final letters it may follow, read off the slot.
+def series_finals(morphemes: tuple[str, ...],
+                  a_after: tuple[str, ...] = ()) -> dict[str, frozenset[str]]:
+    """morpheme -> the stem-final letters it may follow.
 
     Morphemes differing only in their initial consonant are one alternation.
-    Three members divide the finals three ways, with the split chosen by the
-    A-member; two members divide voiced against voiceless.
+    `a_after` names the classes the A-member follows; the B-member takes the
+    remaining voiced finals and the C-member the voiceless ones. Without it the
+    partition is guessed from the A-member's initial, which is right for the
+    slots that have no homograph to be confused with and wrong for the two that
+    do.
     """
+    declared = set().union(*(CLASSES[c] for c in a_after)) if a_after else None
+
     families: dict[tuple[str, str | None], list[str]] = collections.defaultdict(list)
     for m in morphemes:
         if m and m[0] not in VOWELS:
@@ -112,20 +145,23 @@ def series_finals(morphemes: tuple[str, ...]) -> dict[str, frozenset[str]]:
     for members in families.values():
         initials = {m[0] for m in members}
         a_initial = next((i for i in initials if i in A_INITIALS), None)
+        a_set = declared if declared is not None else (
+            _a_set(a_initial) if a_initial else None)
         for m in members:
             first = m[0]
             if first in A_INITIALS:
-                out[m] = frozenset(_a_set(first))
+                out[m] = frozenset(a_set if a_set is not None else VOWELS)
             elif first in B_INITIALS:
-                out[m] = frozenset(_b_set(a_initial) if a_initial
+                out[m] = frozenset(_b_set(a_set) if a_set is not None
                                    else VOWELS | VOICED)
             elif first in C_INITIALS:
                 out[m] = frozenset()          # the voiceless finals: see below
     return out
 
 
-def licensed(stem: str, morpheme: str, morphemes: tuple[str, ...]) -> bool:
-    finals = series_finals(morphemes)
+def licensed(stem: str, morpheme: str, morphemes: tuple[str, ...],
+             a_after: tuple[str, ...] = ()) -> bool:
+    finals = series_finals(morphemes, a_after)
     if morpheme not in finals:
         return True
     last = stem[-1:]
@@ -143,7 +179,8 @@ def linking_pairs(morphemes: tuple[str, ...]) -> frozenset[str]:
 
 
 def fits(stem: str, morpheme: str, slot_morphemes: tuple[str, ...],
-         overrides: dict[str, str] | None = None) -> bool:
+         overrides: dict[str, str] | None = None,
+         a_after: tuple[str, ...] = ()) -> bool:
     """Whether `morpheme` is the shape this stem licenses for its slot.
 
     `overrides` carries stems whose harmony the spelling does not predict:
@@ -162,14 +199,20 @@ def fits(stem: str, morpheme: str, slot_morphemes: tuple[str, ...],
     ends_vowel = stem[-1:] in VOWELS
     if morpheme[0] in VOWELS:
         return not ends_vowel          # `ат-ым`, never `бала-ым`
+    # No geminate glide across a boundary. `болу` does not take a second
+    # тұйық етістік to give `*болуу`, and `сүй` takes `сүйеді`, not `*сүййді`.
+    if morpheme[0] in GLIDES and stem[-1:] == morpheme[0]:
+        return False
     if morpheme in linking_pairs(slot_morphemes):
         return ends_vowel              # `бала-м`, never `ат-м`
 
-    return licensed(stem, morpheme, slot_morphemes)
+    return licensed(stem, morpheme, slot_morphemes, a_after)
 
 
 def realise(stem: str, slot_morphemes: tuple[str, ...],
-            overrides: dict[str, str] | None = None) -> list[str]:
+            overrides: dict[str, str] | None = None,
+            a_after: tuple[str, ...] = ()) -> list[str]:
     """The shapes of this slot that the stem licenses, longest first."""
-    return sorted((m for m in slot_morphemes if fits(stem, m, slot_morphemes, overrides)),
+    return sorted((m for m in slot_morphemes
+                   if fits(stem, m, slot_morphemes, overrides, a_after)),
                   key=len, reverse=True)
