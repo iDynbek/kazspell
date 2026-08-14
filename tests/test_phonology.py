@@ -82,6 +82,38 @@ CASES = [
     ("barys", "су",     "ға", "ге", "суға"),
     ("barys", "армия",  "ға", "ге", "армияға"),
     ("barys", "мектеп", "ке", "ға", "мектепке"),
+
+    # Negation takes -ба after a nasal and -ма after a liquid, which is the
+    # plural's partition and not the instrumental's, though all three alternate
+    # on м/б/п. `сенбейді` is in 483 books and `сенмейді` in none; `көнбейді`
+    # 504 and `көнмейді` none; `келмейді` 1,899 and `келбейді` none.
+    ("bolymsyz", "сен", "бе", "ме", "сенбейді"),
+    ("bolymsyz", "көн", "бе", "ме", "көнбейді"),
+    ("bolymsyz", "жан", "ба", "ма", "жанбайды"),
+    ("bolymsyz", "кел", "ме", "бе", "келмейді"),
+    ("bolymsyz", "бер", "ме", "бе", "бермейді"),
+    ("bolymsyz", "оқы", "ма", "ба", "оқыма"),
+    ("bolymsyz", "жаз", "ба", "ма", "жазбайды"),
+    ("bolymsyz", "айт", "па", "ба", "айтпайды"),
+
+    # `-дай` on a bare stem and after a possessive: `баладай`, `баласындай`.
+    ("salystyru",    "бала",   "дай",  "тай",  "баладай"),
+    ("salystyru",    "ат",     "тай",  "дай",  "аттай"),
+    ("salystyru",    "ер",     "дей",  "тей",  "ердей"),
+    ("salystyru_px", "баласы", "ндай", "ндей", "баласындай"),
+
+    # The long participle is front on `-етұғын` and back on `-атұғын`, which
+    # only a suffix read from its first vowel can tell apart: both end in `ұғын`.
+    ("esimshe", "кел", "етұғын", "атұғын", "келетұғын"),
+    ("esimshe", "бол", "атұғын", "етұғын", "болатұғын"),
+    # And `-ушы`/`-уші` still divide the other way, on their last vowel, which
+    # is why the `у` is skipped rather than counted.
+    ("esimshe", "оқы", "ушы", "уші", "оқушы"),
+    ("esimshe", "кел", "уші", "ушы", "келуші"),
+
+    # A soft sign is not a segment: it is the `л` of `мораль` that picks `-ға`.
+    ("barys", "мораль", "ға", "қа", "моральға"),
+    ("ilik",  "февраль", "дың", "тың", "февральдың"),
 ]
 
 # No geminate glide across a boundary: `болу` does not take a second тұйық
@@ -126,6 +158,26 @@ STEMS = [
     ("ериді",  "ері + -йді"),
     ("оқиын",  "оқы + -йын"),
     ("құритын", "құры + -йтын"),
+    # `й` and a following `а` are written as one `я`.
+    ("жаятын", "жай + -атын"),
+    ("тыятын", "тый + -атын"),
+    # A loanword in `-ь` loses it before a vowel.
+    ("секретары", "секретарь + -ы"),
+]
+
+# Whole words again, for the two slots whose point is where they sit in the
+# chain rather than which shape they take.
+WALKS = [
+    ("баласындай",  "-дай reaches past тәуелдік"),
+    ("қолындай",    "and past the -н that follows it"),
+    ("анаңдай",     "and after a second-person possessive"),
+    ("барсаңшы",    "-шы comes after the person, not before it"),
+    ("болсайшы",    "and takes a й after a vowel"),
+    ("келсеңші",    "front"),
+    ("ойнайық",     "-айық loses its vowel after a vowel-final stem"),
+    ("көтерелік",   "-елік is the same person again"),
+    ("сенбейді",    "negation after a nasal"),
+    ("моральға",    "and a soft sign decides nothing"),
 ]
 
 HARMONY = [
@@ -163,7 +215,7 @@ def main() -> int:
                        f"doubling a glide across the boundary")
     an = Analyser(tpl, read_lexicon(ROOT / "data/lexicon.tsv"),
                   elision=read_elision(ROOT / "data/elision.tsv"))
-    for word, why in STEMS:
+    for word, why in STEMS + WALKS:
         if not an.accepts(word):
             bad.append(f"{word!r} refused — {why}")
     for word, want in HARMONY:
@@ -178,11 +230,11 @@ def main() -> int:
         return 1
     checked = sum(2 if refuse is not None else 1
                   for _s, _st, _w, refuse, _word in CASES + PERSONAL)
-    print(f"{checked + len(NO_GEMINATE) + len(STEMS) + len(HARMONY)} "
+    print(f"{checked + len(NO_GEMINATE) + len(STEMS) + len(WALKS) + len(HARMONY)} "
           f"cases pass: {len(CASES)} allomorph choices, "
           f"{len(PERSONAL)} personal endings, "
           f"{len(NO_GEMINATE)} geminates refused, "
-          f"{len(STEMS)} stem alternations, "
+          f"{len(STEMS)} stem alternations, {len(WALKS)} walks, "
           f"{len(HARMONY)} harmony classes")
     return 0
 

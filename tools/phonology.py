@@ -134,9 +134,28 @@ VELAR_HARMONY = {"қ": "back", "ғ": "back", "к": "front", "г": "front"}
 
 
 def morpheme_harmony(morpheme: str) -> str | None:
+    """A suffix takes its column from its *first* vowel, not its last.
+
+    A stem is decided by the vowel nearest the suffix and a suffix by the vowel
+    nearest the stem, which is the same rule seen from both sides. It makes no
+    difference to any suffix already here — every one of them is classified
+    identically either way — and it is what lets `-етұғын` be front while
+    `-атұғын` is back, where reading the last vowel would call both of them
+    back on the `ұ` and put `келетұғын` out of the language.
+
+    `у` is skipped for the same reason it is skipped in a stem: `-ушы` is back
+    and `-уші` is front, and the `у` says nothing about either.
+    """
     if morpheme in INVARIANT:
         return None
-    return harmony(morpheme) or VELAR_HARMONY.get(morpheme)
+    for ch in morpheme:
+        if ch == "у":
+            continue
+        if ch in BACK:
+            return "back"
+        if ch in FRONT:
+            return "front"
+    return VELAR_HARMONY.get(morpheme)
 
 
 def _alternations(members: list[str]) -> list[list[str]]:
@@ -210,12 +229,20 @@ def series_finals(morphemes: tuple[str, ...],
     return out
 
 
+# The soft sign is not a segment and cannot pick a suffix. `мораль` takes
+# `моральға` and not `*моральқа`, because it is the `л` that decides, and a
+# recogniser reading `ь` as an ordinary final treats it as voiceless and gets
+# the whole class of Russian loanwords in `-ль`, `-рь` and `-нь` wrong.
+def final(stem: str) -> str:
+    return stem[-2:-1] if stem.endswith("ь") else stem[-1:]
+
+
 def licensed(stem: str, morpheme: str, morphemes: tuple[str, ...],
              a_after: tuple[str, ...] = ()) -> bool:
     finals = series_finals(morphemes, a_after)
     if morpheme not in finals:
         return True
-    last = stem[-1:]
+    last = final(stem)
     if morpheme[0] in C_INITIALS:
         return last not in (VOWELS | VOICED)   # only the voiceless finals
     return last in finals[morpheme]
@@ -262,12 +289,12 @@ def fits(stem: str, morpheme: str, slot_morphemes: tuple[str, ...],
         if have is not None and have != want:
             return False
 
-    ends_vowel = stem[-1:] in VOWELS
+    ends_vowel = final(stem) in VOWELS
     if morpheme[0] in VOWELS:
         return not ends_vowel          # `ат-ым`, never `бала-ым`
     # No geminate glide across a boundary. `болу` does not take a second
     # тұйық етістік to give `*болуу`, and `сүй` takes `сүйеді`, not `*сүййді`.
-    if morpheme[0] in GLIDES and stem[-1:] == morpheme[0]:
+    if morpheme[0] in GLIDES and final(stem) == morpheme[0]:
         return False
     if morpheme in linking_pairs(slot_morphemes):
         return ends_vowel              # `бала-м`, never `ат-м`

@@ -49,7 +49,7 @@ morphemes = [
   "лық", "лік", "дық", "дік", "тық", "тік",
   "шы", "ші", "шыл", "шіл",
   "сыз", "сіз", "лы", "лі", "ды", "ді", "ты", "ті",
-  "дай", "дей", "тай", "тей", "ша", "ше",
+  "ша", "ше",
   "ғы", "гі", "қы", "кі",
   "лас", "лес", "дас", "дес", "тас", "тес",
   "ыңқы", "іңкі", "шық", "шік",
@@ -228,6 +228,34 @@ order = 44
 restart = "n"
 morphemes = ["ғы", "гі", "қы", "кі"]
 
+# `-дай/-дей` was filed with the other derivation at order 10, where nothing
+# following тәуелдік could reach it — the same mistake `-ғы` was in, and the
+# same everyday words lost to it: `баласындай` is in 404 of 3,860 books,
+# `шамасындай` 62, `қолындай` 53, `анаңдай` 41. It attaches to a bare stem too,
+# which is why it is not gated on тәуелдік the way the `-н` cases are.
+
+[[slot]]
+id = "salystyru"
+name = "салыстырмалы жұрнақ"
+gloss = "like, resembling — баладай, қолындай"
+track = "n"
+order = 44
+restart = "n"
+# д against т only, with no A-member to decide anything: voiced finals take
+# `-дай` and voiceless `-тай`. `баладай`, `ердей`, `аттай`.
+morphemes = ["дай", "дей", "тай", "тей"]
+
+[[slot]]
+id = "salystyru_px"
+name = "салыстырмалы жұрнақ (тәуелдіктен кейін)"
+gloss = "the same after a third-person possessive: баласындай"
+track = "n"
+order = 44
+restart = "n"
+after = ["tauelik"]
+morphemes = ["ндай", "ндей"]
+a_after = ["vowel"]
+
 [[slot]]
 id = "tauelik_of"
 name = "тәуелдік жалғаудың -нікі түрі"
@@ -295,6 +323,11 @@ gloss = "negation"
 track = "v"
 order = 20
 morphemes = ["ма", "ме", "ба", "бе", "па", "пе"]
+# A nasal takes -ба, not -ма: `сенбейді` 483 books and `сенмейді` none,
+# `көнбейді` 504 and `көнмейді` none, and so for every verb ending in one.
+# The plural divides the finals the same way; the instrumental, on the same
+# м/б/п, does not — `жанмен`, not `*жанбен`.
+a_after = ["vowel", "glide", "r", "liquid"]
 
 [[slot]]
 id = "kosemshe"
@@ -320,6 +353,9 @@ restart = "n"
 morphemes = [
   "ған", "ген", "қан", "кен",
   "атын", "етін", "йтын", "йтін",
+  # The same participle spelt long, and not rare: `айтатұғын` is in 210 of
+  # 3,860 books against 1,515 for `айтатын`, `болатұғын` 175 against 2,467.
+  "атұғын", "етұғын",
   "ар", "ер", "р", "мақ", "мек", "бақ", "бек", "пақ", "пек",
   "мақшы", "мекші", "бақшы", "бекші", "пақшы", "пекші",   # `бармақшы` — intent
   # The negative aorist is fused: `алмас`, `болмас`, `айтпас`. It is not
@@ -387,6 +423,10 @@ morphemes = [
   # бұйрық рай, third person and first plural: `барсын`, `барайық`. Both were
   # absent, and both are everyday forms — apertium-kaz has carried them all along.
   "сын", "сін", "айық", "ейік",
+  # After a vowel-final stem the `-айық` loses its own: `ойнайық` 101 books,
+  # `байқайық` 88. `-алық/-елік` is the same person again — `көтерелік` 45,
+  # `қоштасалық` 24 — and apertium-kaz spells it out as well.
+  "йық", "йік", "алық", "елік",
   "ғы", "гі", "қы", "кі",
   "ыңыз", "іңіз", "ыңдар", "іңдер", "ңыз", "ңіз", "ңдар", "ңдер",
   "шы", "ші", "ңызшы", "ңізші",
@@ -443,3 +483,19 @@ morphemes = [
   "сыңдар", "сіңдер", "сыздар", "сіздер",
   "ды", "ді",
 ]
+
+# `-шы/-ші` softens an order into a request, and it comes after the person
+# rather than before it: `барсаңшы` is бар-са-ң-шы, not бар-шы-са-ң. That is
+# why it needs an order of its own above жіктік — the рай slot already carries
+# a `-шы` for `айтшы`, where there is no person in between.
+#
+# After a vowel it takes a `й`: `болсайшы`, in 220 of 3,860 books.
+
+[[slot]]
+id = "otinish"
+name = "өтініш демеулігі"
+gloss = "the -шы of a softened request: барсаңшы, болсайшы"
+track = "v"
+order = 60
+after = ["rai", "rai_shart", "jiktik_otken"]
+morphemes = ["шы", "ші", "йшы", "йші"]

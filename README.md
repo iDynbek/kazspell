@@ -50,7 +50,7 @@ only way that dictionary stops being mined.
 Phase 1, per-lexeme paradigm assignment. Every entry has to say which families
 it takes; nothing downstream works until it does.
 
-    data/template.toml            the suffix template: 32 slots, their order,
+    data/template.toml            the suffix template: 35 slots, their order,
                                   their exclusions, the entry features they
                                   require, and where a slot derives a new stem
     tools/template.py             load it, refuse it if incoherent, answer the
@@ -70,16 +70,16 @@ it takes; nothing downstream works until it does.
                                   corpus is not Kazakh
     tests/test_template.py        37 cases: real forms the template must build,
                                   real errors it must refuse
-    tests/test_phonology.py       92 cases: which allomorph each slot takes on
-                                  a given stem, decided by the books
+    tests/test_phonology.py       141 cases: which allomorph each slot takes
+                                  on a given stem, decided by the books
 
 ### First measurement of the architecture
 
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
-| catches misspellings | **96.7%** | 96.4% | 99.4% |
-| accepts real Kazakh | **94.3%** | 98.1% | 82.1% |
-| accepts the corpus as it stands | 85.3% | — | — |
+| catches misspellings | **96.6%** | 96.4% | 99.4% |
+| accepts real Kazakh | **94.8%** | 98.1% | 82.1% |
+| accepts the corpus as it stands | 85.8% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
 
@@ -106,11 +106,44 @@ mysterious. Two stem alternations are in — the closed class that drops a vowel
 recall between them; the allomorph defects below were worth 2.7 more, the
 second personal series 2.1 after that, and a third stem alternation 0.3.
 
-That third one is the seam between a stem ending in `ы` or `і` and a suffix
-beginning with `й`, which are written as a single `и`: `оқы` plus `-йды` is
-`оқиды`, in 882 books against 7 for `оқыйды`. The suffix does not change and
-only the spelling of the join moves, so the recogniser puts the `й` back and
-walks the ordinary chain.
+### What the ordinary words were failing on
+
+With Russian set aside and the name-like forms with it, 82.6% of the remaining
+missed weight is everyday vocabulary, and it came down to a handful of things.
+
+- **Negation after a nasal is `-ба`, not `-ма`.** `сенбейді` is in 483 of 3,860
+  books and `сенмейді` in none; `көнбейді` 504 and `көнмейді` none; and so for
+  every verb ending in one, in every tense. The partition was the
+  instrumental's — `жанмен` really does take `-мен` — but negation divides the
+  finals the way the plural does, though all three alternate on м/б/п.
+
+- **`-дай/-дей` could not reach past тәуелдік.** Exactly the mistake `-ғы` was
+  in: filed with the derivation at order 10, where nothing following a
+  possessive can get to it. `баласындай` is in 404 books, `шамасындай` 62,
+  `қолындай` 53, `анаңдай` 41.
+
+- **A suffix takes its column from its first vowel, not its last.** A stem is
+  decided by the vowel nearest the suffix and a suffix by the vowel nearest the
+  stem — the same rule from both sides. It changes the classification of no
+  suffix already here, and it is what lets `-етұғын` be front while `-атұғын`
+  is back, both of them ending in `ұғын`. `айтатұғын` is in 210 books.
+
+- **A soft sign is not a segment.** `мораль` takes `моральға`, because it is
+  the `л` that decides, and reading `ь` as an ordinary final made it voiceless
+  and got the whole class of loanwords in `-ль`, `-рь` and `-нь` wrong.
+
+- **Three seams**, where a letter is written across the join and neither the
+  stem nor the suffix has changed: `ы`/`і` plus `й` written `и` (`оқы` +
+  `-йды` = `оқиды`, 882 books against 7 for `оқыйды`), `й` plus `а` written `я`
+  (`жай` + `-атын` = `жаятын`, 139 against none), and a loanword in `-ь`
+  losing it before a vowel (`секретарь` + `-ы` = `секретары`). Undoing the
+  spelling gives back the ordinary walk.
+
+- **Two missing forms and one missing slot.** `-йық/-йік` is `-айық` after a
+  vowel-final stem (`ойнайық` 101, `байқайық` 88) and `-алық/-елік` is the same
+  person again (`көтерелік` 45). And `-шы` softening an order into a request
+  comes *after* the person — `барсаңшы` is бар-са-ң-шы — so it needs an order
+  above жіктік, which the рай slot's own `-шы` of `айтшы` does not.
 
 Of 8,629 rejected forms, 64.5% of the book-weight is valid Russian —
 `которую`, `последний`, `отказаться` — and 20.9% carries a Kazakh-only letter

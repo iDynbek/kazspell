@@ -101,24 +101,16 @@ class Analyser:
         seen = set()
         for cut in range(1, len(word) + 1):
             stem, rest = word[:cut], word[cut:]
-            # A stem ending in `ы` or `і` writes that vowel and a following
-            # `й` as a single `и`: `оқы` plus `-йды` is `оқиды`, in 882 books
-            # against 7 for `оқыйды`. The suffix is unchanged and only the
-            # spelling of the seam moves, so the walk is the ordinary one with
-            # the `й` put back.
-            if stem.endswith("и"):
-                for vowel in ("ы", "і"):
-                    lemma = stem[:-1] + vowel
-                    merged = self.lexicon.get(lemma)
-                    if merged is None:
-                        continue
-                    for track in tracks_of(merged):
-                        for path in self._walk(lemma, "й" + rest, track,
-                                               None, merged):
-                            reading = tuple([lemma] + path)
-                            if reading not in seen:
-                                seen.add(reading)
-                                out.append(list(reading))
+            for lemma, tail in self._seams(stem, rest):
+                merged = self.lexicon.get(lemma)
+                if merged is None:
+                    continue
+                for track in tracks_of(merged):
+                    for path in self._walk(lemma, tail, track, None, merged):
+                        reading = tuple([lemma] + path)
+                        if reading not in seen:
+                            seen.add(reading)
+                            out.append(list(reading))
             features = self.lexicon.get(stem)
             elided_from = self.elision.get(stem)
             if features is None and elided_from is not None:
@@ -143,6 +135,28 @@ class Analyser:
                         seen.add(reading)
                         out.append(list(reading))
         return out
+
+    def _seams(self, stem: str, rest: str):
+        """(lemma, suffix) pairs where the join is spelt differently from both.
+
+        These are not alternations of the stem or of the suffix — both are
+        unchanged, and it is only the seam between them that a letter is
+        written across. Undoing the spelling gives back the ordinary walk.
+        """
+        # `ы`/`і` and a following `й` are written as one `и`: `оқы` plus
+        # `-йды` is `оқиды`, in 882 books against 7 for `оқыйды`.
+        if stem.endswith("и"):
+            for vowel in ("ы", "і"):
+                yield stem[:-1] + vowel, "й" + rest
+        # `й` and a following `а` are written as one `я`: `жай` plus `-атын`
+        # is `жаятын`, in 139 books against none for `жайатын`.
+        if stem.endswith("я"):
+            yield stem[:-1] + "й", "а" + rest
+        # A Russian loanword in `-ь` loses it before a vowel: `медаль` gives
+        # `медалімен`, `секретарь` gives `секретары`. The soft sign is not a
+        # segment and nothing can be attached across it.
+        if rest[:1] in VOWELS:
+            yield stem + "ь", rest
 
     def _walk(self, surface: str, rest: str, track: str, prev, features):
         """Sequences of slots spelling `rest`, attaching after `surface`."""
