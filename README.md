@@ -268,9 +268,26 @@ a 120B one.
 
 None of it decides anything. `tools/regress.py` is still the gate, and the
 mechanical filters in `discover.py` already got 316 words at no cost in
-precision. What a model is for is the harder pool — the 4,363 candidates
-refused for being one letter from an entry, and the 59,228 whose paradigm
-evidence is thin — where the answer is a judgement rather than a rule.
+precision. What a model is for is the harder pool — the 4,283 candidates
+`discover.py` holds back for being one letter from an entry, now written to
+`data/near_misses.tsv` instead of dropped. Most are that entry misspelt; some
+are ordinary words with an unlucky neighbour, and telling those apart is a
+judgement rather than a rule.
+
+That pool is some six hundred requests, which is most of a day's free
+allowance and far too long to sit and watch, so it runs on a systemd user
+timer — `tools/triage_cron.sh`, every three hours, 120 requests a run, 960 a
+day at the worst. Each run resumes from the checkpoint and stops when its
+slice is spent.
+
+Two things make that safe to leave alone. Failures are deferred rather than
+lost: a batch that dies on a transient refusal, and any candidate the model
+simply does not mention, go into a queue that is retried in smaller batches
+once the main pass is over — a model that drops four candidates out of twelve
+usually answers all four when they are the only ones in front of it. And
+whatever is *still* unanswered is deliberately not written down, so the next
+run asks about it again. Recording silence as a verdict is what produced a
+quarter of the first calibration's apparent refusals.
 
 ### A suffix voices its final stop too, not only an entry
 

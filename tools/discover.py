@@ -101,6 +101,9 @@ def main() -> int:
     ap.add_argument("--attested", type=Path, default=ROOT / "data/attested.tsv.gz")
     ap.add_argument("--russian", type=Path, default=ROOT / "data/russian.tsv.gz")
     ap.add_argument("-o", "--output", type=Path, default=ROOT / "data/discovered.tsv")
+    ap.add_argument("--near-misses", type=Path,
+                    default=ROOT / "data/near_misses.tsv",
+                    help="candidates one letter from an entry, for review")
     ap.add_argument("--min-docs", type=int, default=2,
                     help="ignore a type in fewer books than this")
     ap.add_argument("--patterns", type=int, default=3,
@@ -144,7 +147,7 @@ def main() -> int:
     index = set(known)
     for entry in known:
         index |= deletions(entry)
-    rows, refused = [], collections.Counter()
+    rows, nearby, refused = [], [], collections.Counter()
     for stem, sigs in patterns.items():
         if stem in known:
             continue
@@ -165,6 +168,12 @@ def main() -> int:
                 refused["a Russian-keyboard spelling of an entry"] += 1
                 continue
         if near(stem, index):
+            # Not discarded. A candidate one letter from an entry is usually
+            # that entry misspelt, which is why it does not go in — but some
+            # are ordinary words that happen to have a near neighbour, and
+            # 4,363 of them is a pool worth reading rather than dropping.
+            nearby.append((stem, len(sigs), len(forms[stem]), weight[stem],
+                           attested.get(stem, 0)))
             refused["one letter from an entry"] += 1
             continue
         rows.append((stem, len(sigs), len(forms[stem]), weight[stem],
@@ -175,6 +184,16 @@ def main() -> int:
     # `кла` and `отба` are in none. It is not a rule, because a stem that only
     # ever appears inflected is a real thing too, so it is a column to sort by
     # rather than a gate to fail.
+    # Everything already discovered is in the analyser by now, so a second run
+    # finds nothing new — and must not therefore write an empty file over the
+    # first run's work. Previous rows are carried through unchanged.
+    if args.output.exists():
+        for line in args.output.read_text(encoding="utf-8").splitlines():
+            if line.strip() and not line.startswith("#"):
+                stem, p_, f_, w_, b_ = (line.split("\t") + ["0"] * 4)[:5]
+                if stem not in {r[0] for r in rows}:
+                    rows.append((stem, int(p_), int(f_), int(w_), int(b_)))
+
     rows.sort(key=lambda r: (-r[4], -r[3]))
     args.output.write_text(
         "# stem\tpatterns\tforms\tbook-weight\tbare — tools/discover.py\n"
@@ -183,7 +202,16 @@ def main() -> int:
         + "\n".join(f"{s}\t{p}\t{f}\t{w}\t{b}" for s, p, f, w, b in rows) + "\n",
         encoding="utf-8")
 
+    nearby.sort(key=lambda r: (-r[4], -r[3]))
+    args.near_misses.write_text(
+        "# stem\tpatterns\tforms\tbook-weight\tbare — tools/discover.py\n"
+        "# candidates held back for being one letter from an entry. Most are\n"
+        "# that entry misspelt; some are words with an unlucky neighbour.\n"
+        + "\n".join(f"{s}\t{p}\t{f}\t{w}\t{b}" for s, p, f, w, b in nearby)
+        + "\n", encoding="utf-8")
+
     print(f"{len(rows):,} candidates → {args.output}")
+    print(f"{len(nearby):,} held back → {args.near_misses}")
     for why, n in refused.most_common():
         print(f"  {n:>6,} refused: {why}")
     print()

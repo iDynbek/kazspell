@@ -221,8 +221,28 @@ def read_checkpoint(path: Path) -> dict[str, dict[str, dict]]:
     return out
 
 
+def record(log, done, model_id: str, chunk: list[str], got: dict,
+           deferred: list[str]) -> None:
+    """Write down the answers, and set aside the candidates without one.
+
+    Silence is not a verdict. Recording an unanswered candidate as `missing`
+    would make every later run skip it, which is how a quarter of the first
+    calibration's apparent refusals were produced.
+    """
+    for word in chunk:
+        judgement = got.get(word)
+        if judgement is None:
+            deferred.append(word)
+            continue
+        done[model_id][word] = {
+            "model": model_id, "word": word, "verdict": judgement.verdict,
+            "lemma": judgement.lemma, "pos": judgement.pos}
+        log.write(json.dumps(done[model_id][word], ensure_ascii=False) + "\n")
+
+
 async def run(models: list[str], words: list[str], limiter: Limiter,
-              checkpoint: Path, size: int) -> dict[str, dict[str, dict]]:
+              checkpoint: Path, size: int,
+              retries: int = 2) -> dict[str, dict[str, dict]]:
     done = read_checkpoint(checkpoint)
     with checkpoint.open("a", encoding="utf-8") as log:
         for model_id in models:
@@ -234,7 +254,7 @@ async def run(models: list[str], words: list[str], limiter: Limiter,
             print(f"{model_id}: {len(todo):,} to do, "
                   f"{len(todo) // size + 1} requests", file=sys.stderr)
             chunks = [todo[i:i + size] for i in range(0, len(todo), size)]
-            stop = False
+            stop, deferred = False, []
             for wave in range(0, len(chunks), limiter.slots._value or 1):
                 group = chunks[wave:wave + (limiter.slots._value or 1)]
                 results = await asyncio.gather(
@@ -246,18 +266,14 @@ async def run(models: list[str], words: list[str], limiter: Limiter,
                         stop = True
                         break
                     if isinstance(got, BaseException):
-                        print(f"  batch failed, skipping: "
-                              f"{type(got).__name__} {str(got)[:100]}",
-                              file=sys.stderr)
+                        # Not lost: a batch that failed on a transient upstream
+                        # refusal is worth asking again once the pass is over
+                        # and whatever was throttling it has had time to clear.
+                        print(f"  deferred: {type(got).__name__} "
+                              f"{str(got)[:90]}", file=sys.stderr)
+                        deferred.extend(chunk)
                         continue
-                    for word in chunk:
-                        j = got.get(word)
-                        row = {"model": model_id, "word": word,
-                               "verdict": j.verdict if j else "missing",
-                               "lemma": j.lemma if j else "",
-                               "pos": j.pos if j else ""}
-                        done[model_id][word] = row
-                        log.write(json.dumps(row, ensure_ascii=False) + "\n")
+                    record(log, done, model_id, chunk, got, deferred)
                 log.flush()
                 seen = min((wave + len(group)) * size, len(todo))
                 print(f"  {seen:,}/{len(todo):,}  "
@@ -265,6 +281,40 @@ async def run(models: list[str], words: list[str], limiter: Limiter,
                 if stop:
                     return done
             print(file=sys.stderr)
+
+            # The deferred pass. Everything the main pass could not get an
+            # answer for is asked again in smaller batches — a model that drops
+            # four candidates out of twelve usually answers all four when they
+            # are the only ones in front of it. Whatever is still unanswered is
+            # deliberately not written down, so the next run asks about it
+            # rather than treating silence as a verdict.
+            for attempt in range(retries):
+                if not deferred:
+                    break
+                small = max(2, size // (2 * (attempt + 1)))
+                waiting, deferred = deferred, []
+                print(f"  deferred pass {attempt + 1}: {len(waiting):,} left, "
+                      f"batches of {small}", file=sys.stderr)
+                chunks = [waiting[i:i + small]
+                          for i in range(0, len(waiting), small)]
+                width = limiter.slots._value or 1
+                for wave in range(0, len(chunks), width):
+                    group = chunks[wave:wave + width]
+                    results = await asyncio.gather(
+                        *(ask_all(agent, limiter, c) for c in group),
+                        return_exceptions=True)
+                    for chunk, got in zip(group, results):
+                        if isinstance(got, RuntimeError):
+                            print(f"  stopping: {got}", file=sys.stderr)
+                            return done
+                        if isinstance(got, BaseException):
+                            deferred.extend(chunk)
+                            continue
+                        record(log, done, model_id, chunk, got, deferred)
+                    log.flush()
+            if deferred:
+                print(f"  {len(deferred):,} still unanswered; left for the "
+                      f"next run", file=sys.stderr)
     return done
 
 
@@ -283,6 +333,8 @@ def main() -> int:
                     help="stop after this many requests")
     ap.add_argument("--concurrency", type=int, default=6,
                     help="requests in the air at once")
+    ap.add_argument("--retries", type=int, default=2,
+                    help="deferred passes over whatever went unanswered")
     ap.add_argument("--limit", type=int, help="only the first N candidates")
     ap.add_argument("--calibrate", type=int, metavar="N",
                     help="score the models on N strings whose answer is known")
@@ -308,7 +360,8 @@ def main() -> int:
         checkpoint = args.checkpoint
 
     limiter = Limiter(args.rpm, args.cap, args.concurrency)
-    done = asyncio.run(run(args.models, words, limiter, checkpoint, args.batch))
+    done = asyncio.run(run(args.models, words, limiter, checkpoint,
+                           args.batch, args.retries))
     print(f"{limiter.used} requests used", file=sys.stderr)
 
     if truth:
