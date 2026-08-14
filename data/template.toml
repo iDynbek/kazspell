@@ -414,6 +414,22 @@ morphemes = [
   "лар", "лер",
 ]
 
+# The aorist has a first person singular of its own, beside the -мын it shares
+# with everything else: `барам` in 994 of 3,860 books against `барамын` in
+# 1,256, `білем` in 1,354. apertium-kaz carries it as V-PERS-AOR. It follows
+# the көсемше vowel and nothing else, which `a_after` says — without it
+# `*айтыпм` is as licensed as `барам`.
+
+[[slot]]
+id = "jiktik_aor"
+name = "жіктік жалғау (ауыспалы осы шақ)"
+gloss = "first person singular on the aorist: барам, келем"
+track = "v"
+order = 50
+after = ["kosemshe"]
+a_after = ["vowel"]
+morphemes = ["м"]
+
 [[slot]]
 id = "jiktik_v"
 name = "жіктік жалғау"

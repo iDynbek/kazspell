@@ -50,7 +50,7 @@ only way that dictionary stops being mined.
 Phase 1, per-lexeme paradigm assignment. Every entry has to say which families
 it takes; nothing downstream works until it does.
 
-    data/template.toml            the suffix template: 31 slots, their order,
+    data/template.toml            the suffix template: 32 slots, their order,
                                   their exclusions, the entry features they
                                   require, and where a slot derives a new stem
     tools/template.py             load it, refuse it if incoherent, answer the
@@ -70,7 +70,7 @@ it takes; nothing downstream works until it does.
                                   corpus is not Kazakh
     tests/test_template.py        37 cases: real forms the template must build,
                                   real errors it must refuse
-    tests/test_phonology.py       83 cases: which allomorph each slot takes on
+    tests/test_phonology.py       92 cases: which allomorph each slot takes on
                                   a given stem, decided by the books
 
 ### First measurement of the architecture
@@ -78,8 +78,8 @@ it takes; nothing downstream works until it does.
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
 | catches misspellings | **96.7%** | 96.4% | 99.4% |
-| accepts real Kazakh | **94.0%** | 98.1% | 82.1% |
-| accepts the corpus as it stands | 85.0% | — | — |
+| accepts real Kazakh | **94.3%** | 98.1% | 82.1% |
+| accepts the corpus as it stands | 85.3% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
 
@@ -87,8 +87,8 @@ Those last two rows are the same measurement over different denominators, and
 the gap between them is Russian. The 3,860 editions are Kazakh books that quote
 and code-switch, and 21.2% of the types in them are words a Russian dictionary
 accepts — which the recogniser is right to refuse and which counted against it
-anyway. `data/russian.tsv.gz` says which types those are; 94.0% is recall on
-the rest. Neither figure is the true one. The first is dragged down by Russian
+anyway. `data/russian.tsv.gz` says which types those are, and the higher figure
+is recall on the rest. Neither figure is the true one. The first is dragged down by Russian
 and the second drops the 8,600 words the two languages share — `да`, `бар`,
 `бала` — which are ours and are being given away. The truth is between them.
 
@@ -103,8 +103,14 @@ Recall is the open side, and open for reasons that are known rather than
 mysterious. Two stem alternations are in — the closed class that drops a vowel
 (`мойын` → `мойнына`) and the voicing of a final stop before a vowel (`мектеп`
 → `мектебін`, `амандық` → `амандығын`) — worth 3.3 points of book-weighted
-recall between them; the allomorph defects below were worth 2.7 more, and the
-second personal series 2.1 after that.
+recall between them; the allomorph defects below were worth 2.7 more, the
+second personal series 2.1 after that, and a third stem alternation 0.3.
+
+That third one is the seam between a stem ending in `ы` or `і` and a suffix
+beginning with `й`, which are written as a single `и`: `оқы` plus `-йды` is
+`оқиды`, in 882 books against 7 for `оқыйды`. The suffix does not change and
+only the spelling of the join moves, so the recogniser puts the `й` back and
+walks the ordinary chain.
 
 Of 8,629 rejected forms, 64.5% of the book-weight is valid Russian —
 `которую`, `последний`, `отказаться` — and 20.9% carries a Kazakh-only letter

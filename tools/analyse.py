@@ -101,6 +101,24 @@ class Analyser:
         seen = set()
         for cut in range(1, len(word) + 1):
             stem, rest = word[:cut], word[cut:]
+            # A stem ending in `ы` or `і` writes that vowel and a following
+            # `й` as a single `и`: `оқы` plus `-йды` is `оқиды`, in 882 books
+            # against 7 for `оқыйды`. The suffix is unchanged and only the
+            # spelling of the seam moves, so the walk is the ordinary one with
+            # the `й` put back.
+            if stem.endswith("и"):
+                for vowel in ("ы", "і"):
+                    lemma = stem[:-1] + vowel
+                    merged = self.lexicon.get(lemma)
+                    if merged is None:
+                        continue
+                    for track in tracks_of(merged):
+                        for path in self._walk(lemma, "й" + rest, track,
+                                               None, merged):
+                            reading = tuple([lemma] + path)
+                            if reading not in seen:
+                                seen.add(reading)
+                                out.append(list(reading))
             features = self.lexicon.get(stem)
             elided_from = self.elision.get(stem)
             if features is None and elided_from is not None:

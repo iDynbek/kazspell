@@ -18,8 +18,10 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
 
+from analyse import Analyser, read_elision, read_lexicon  # noqa: E402
 from phonology import harmony, realise  # noqa: E402
 from template import load  # noqa: E402
 
@@ -102,6 +104,30 @@ PERSONAL = [
     ("jiktik_n", "барған", "сың", None, "барғансың"),
 ]
 
+# The three alternations that change the stem rather than the suffix, tested as
+# whole words because that is the only place they show.
+#
+# Only one way round. An alternation adds a spelling of the seam; it does not
+# make the unalternated one impossible, and the unalternated one is usually a
+# legal walk on its own account — `оқыйды` is `оқы` plus the көсемше `-й` plus
+# `-ды`, and `мойынына` is `мойын` with an ordinary possessive. Whether those
+# should be refused is a question about the walks, not about the seam.
+STEMS = [
+    # A closed class drops the vowel of its last syllable before a vowel.
+    ("мойнына",  "мойын drops its vowel"),
+    ("халқы",    "халық likewise"),
+    # A final voiceless stop voices before a vowel.
+    ("мектебін",  "мектеп voices its п"),
+    ("амандығын", "амандық voices its қ"),
+    # A final ы or і and a following й are written as one и: `оқиды` is in 882
+    # books and `оқыйды` in 7.
+    ("оқиды",  "оқы + -йды"),
+    ("ашитын", "ашы + -йтын"),
+    ("ериді",  "ері + -йді"),
+    ("оқиын",  "оқы + -йын"),
+    ("құритын", "құры + -йтын"),
+]
+
 HARMONY = [
     ("такси",       "front"),   # таксиді
     ("институт",    "back"),    # институтқа — on the у, not the и
@@ -135,6 +161,11 @@ def main() -> int:
         if refuse in shapes(slot_id, stem):
             bad.append(f"{slot_id} on {stem!r} takes {refuse!r}, "
                        f"doubling a glide across the boundary")
+    an = Analyser(tpl, read_lexicon(ROOT / "data/lexicon.tsv"),
+                  elision=read_elision(ROOT / "data/elision.tsv"))
+    for word, why in STEMS:
+        if not an.accepts(word):
+            bad.append(f"{word!r} refused — {why}")
     for word, want in HARMONY:
         got = harmony(word)
         if got != want:
@@ -147,9 +178,11 @@ def main() -> int:
         return 1
     checked = sum(2 if refuse is not None else 1
                   for _s, _st, _w, refuse, _word in CASES + PERSONAL)
-    print(f"{checked + len(NO_GEMINATE) + len(HARMONY)} cases pass: "
-          f"{len(CASES)} allomorph choices, {len(PERSONAL)} personal endings, "
+    print(f"{checked + len(NO_GEMINATE) + len(STEMS) + len(HARMONY)} "
+          f"cases pass: {len(CASES)} allomorph choices, "
+          f"{len(PERSONAL)} personal endings, "
           f"{len(NO_GEMINATE)} geminates refused, "
+          f"{len(STEMS)} stem alternations, "
           f"{len(HARMONY)} harmony classes")
     return 0
 
