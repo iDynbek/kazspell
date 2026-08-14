@@ -183,8 +183,20 @@ class Analyser:
         if prev is not None and len(rest) > self.max_morpheme * MAX_SLOTS:
             return
         for cut in range(min(len(rest), self.max_morpheme), 0, -1):
-            morpheme = rest[:cut]
-            for slot in self.tpl.by_morpheme.get(morpheme, ()):
+            written = rest[:cut]
+            # A derived stem voices its final stop before a vowel exactly as an
+            # entry does — `-дық` plus `-ы` is `дығы` — and until now only
+            # entries could. `болатындығын`, in 326 of 3,860 books, and every
+            # other -лық noun carrying a possessive was unbuildable; what did
+            # get through, `достығымыз`, got through by being read as `-ты`
+            # plus `-ғы`, two derivations that are not there.
+            spellings = [written]
+            if rest[cut:cut + 1] in VOWELS:
+                voiced = devoice(written)
+                if voiced is not None:
+                    spellings.append(voiced)
+            for morpheme, slot in ((m, s) for m in spellings
+                                   for s in self.tpl.by_morpheme.get(m, ())):
                 if prev is None:
                     if slot.track != track or slot.after:
                         continue
@@ -203,9 +215,9 @@ class Analyser:
                             slot.a_after):
                     continue
                 nxt = slot.restart or slot.track
-                for tail in self._walk(surface + morpheme, rest[cut:],
+                for tail in self._walk(surface + written, rest[cut:],
                                        nxt, slot, features):
-                    yield [f"{slot.id}:{morpheme}"] + tail
+                    yield [f"{slot.id}:{written}"] + tail
 
     def accepts(self, word: str) -> bool:
         return bool(self.analyse(word))

@@ -82,7 +82,7 @@ it takes; nothing downstream works until it does.
 
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
-| catches misspellings | **96.6%** | 96.4% | 99.4% |
+| catches misspellings | **96.5%** | 96.4% | 99.4% |
 | accepts real Kazakh | **95.5%** | 98.1% | 82.1% |
 | accepts the corpus as it stands | 86.4% | — | — |
 
@@ -165,6 +165,22 @@ Of 8,629 rejected forms, 64.5% of the book-weight is valid Russian —
 `которую`, `последний`, `отказаться` — and 20.9% carries a Kazakh-only letter
 and is certainly ours to fix. That second share was 38.2% when this started,
 which is the useful way to read it.
+
+### A suffix voices its final stop too, not only an entry
+
+`мектеп` becomes `мектебі` and that has worked from the start, because the
+voicing was applied where an entry is looked up. A derived stem does the same
+thing — `-дық` plus `-ы` is `дығы` — and nothing applied it there, so
+`болатындығын` was unbuildable, in 326 of 3,860 books, along with 3,340 other
+types carrying `-лығ-`, `-дығ-` or `-тығ-` before a vowel.
+
+What did get through got through wrongly. `достығымыз` was read as `дос` plus
+`-ты` plus `-ғы` plus `-ымыз`: two derivations that are not in the word, which
+happen to spell the same letters as one derivation that is. The analysis is now
+`дос` + `-тығ` + `-ымыз`, and `болатындығын` is `бол` + `-атын` + `-дығ` +
+`-ы` + `-н`.
+
+63 real words gained and nothing lost, which is what `tools/regress.py` is for.
 
 ### A score moving is not a review
 
