@@ -34,8 +34,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from analyse import (Analyser, read_elision, read_harmony,  # noqa: E402
-                     read_lexicon)
+from analyse import (Analyser, load_lexicon, read_elision,  # noqa: E402
+                     read_harmony)
 from measure import build_sample, build_typos, read_attested  # noqa: E402
 from template import load  # noqa: E402
 
@@ -89,6 +89,8 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--min-docs", type=int, default=2)
     ap.add_argument("--lexicon", type=Path, default=ROOT / "data/lexicon.tsv")
+    ap.add_argument("--discovered", type=Path,
+                    default=ROOT / "data/discovered.tsv")
     ap.add_argument("--attested", type=Path, default=ROOT / "data/attested.tsv.gz")
     ap.add_argument("--baseline", type=Path, default=ROOT / "data/verdicts.tsv.gz")
     ap.add_argument("--accept", action="store_true",
@@ -98,7 +100,7 @@ def main() -> int:
     args = ap.parse_args()
 
     attested = read_attested(args.attested)
-    an = Analyser(load(), read_lexicon(args.lexicon),
+    an = Analyser(load(), load_lexicon(args.lexicon, args.discovered),
                   overrides=read_harmony(ROOT / "data/harmony.tsv"),
                   elision=read_elision(ROOT / "data/elision.tsv"))
     now = verdicts(an, attested, args.sample, args.typos, args.seed,

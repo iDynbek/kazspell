@@ -53,6 +53,33 @@ def read_lexicon(path: Path) -> dict[str, frozenset[str]]:
     return out
 
 
+def read_discovered(path: Path) -> dict[str, frozenset[str]]:
+    """Stems the books inflect that no source vouched for.
+
+    Kept in their own file rather than merged into the lexicon, because they
+    are not the same kind of thing: every entry in `lexicon.tsv` was offered by
+    apertium, kazdict or the 2009 release and then gated, and these were argued
+    for by the corpus alone. They carry no part of speech, so both tracks are
+    open to them and `requires` refuses them, which is the right amount of
+    confidence to extend to a word nobody has vouched for.
+    """
+    if not path.exists():
+        return {}
+    out = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.startswith("#"):
+            out[line.split("\t")[0]] = frozenset()
+    return out
+
+
+def load_lexicon(lexicon: Path, discovered: Path) -> dict[str, frozenset[str]]:
+    """The vouched-for entries, plus the discovered ones that add something."""
+    out = read_lexicon(lexicon)
+    for form, features in read_discovered(discovered).items():
+        out.setdefault(form, features)
+    return out
+
+
 def read_elision(path: Path) -> dict[str, str]:
     """elided stem -> the lemma it belongs to.
 
@@ -225,7 +252,8 @@ class Analyser:
 
 @functools.lru_cache(maxsize=1)
 def default() -> Analyser:
-    return Analyser(load(), read_lexicon(ROOT / "data/lexicon.tsv"),
+    return Analyser(load(), load_lexicon(ROOT / "data/lexicon.tsv",
+                                        ROOT / "data/discovered.tsv"),
                     overrides=read_harmony(ROOT / "data/harmony.tsv"),
                     elision=read_elision(ROOT / "data/elision.tsv"))
 
@@ -239,7 +267,8 @@ def main() -> int:
     ap.add_argument("--lexicon", type=Path, default=ROOT / "data/lexicon.tsv")
     args = ap.parse_args()
 
-    an = Analyser(load(), read_lexicon(args.lexicon),
+    an = Analyser(load(), load_lexicon(args.lexicon,
+                                       ROOT / "data/discovered.tsv"),
                   overrides=read_harmony(ROOT / "data/harmony.tsv"),
                   elision=read_elision(ROOT / "data/elision.tsv"))
     bad = 0

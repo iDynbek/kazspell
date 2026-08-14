@@ -70,6 +70,8 @@ it takes; nothing downstream works until it does.
                                   corpus is not Kazakh
     tools/harmony_overrides.py    which entries take the column their spelling
                                   does not predict, read off the books
+    tools/discover.py             stems the books inflect that no source
+                                  vouched for, as candidates to be read
     tools/regress.py              which words changed their verdict since last
                                   time, so a score moving can be checked rather
                                   than believed
@@ -83,8 +85,8 @@ it takes; nothing downstream works until it does.
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
 | catches misspellings | **96.5%** | 96.4% | 99.4% |
-| accepts real Kazakh | **95.5%** | 98.1% | 82.1% |
-| accepts the corpus as it stands | 86.4% | — | — |
+| accepts real Kazakh | **96.0%** | 98.1% | 82.1% |
+| accepts the corpus as it stands | 86.9% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
 
@@ -165,6 +167,46 @@ Of 8,629 rejected forms, 64.5% of the book-weight is valid Russian —
 `которую`, `последний`, `отказаться` — and 20.9% carries a Kazakh-only letter
 and is certainly ours to fix. That second share was 38.2% when this started,
 which is the useful way to read it.
+
+### Coverage is a vocabulary problem now
+
+Of the missed book-weight that is neither Russian nor a name, 48% has no usable
+stem at all — no prefix of the word is an entry — so no amount of morphology
+reaches it. The three sources the lexicon was built from are exhausted. The
+corpus is not.
+
+What makes a string a word rather than a typo is that the language inflects it.
+`процес` appears with `-тер`, `-ке`, `-те` and `-тің`; a misspelling appears
+once, in one shape. `tools/discover.py` asks for that paradigm — three distinct
+walks through the template over three distinct attested types — and three
+things keep it from finding what is already known:
+
+- **Only types the recogniser refuses.** A word it already builds says nothing
+  about a missing entry. Letting them in produced `шығ`, `сөй` and `өмі` —
+  pieces of `шығу`, `сөйле` and `өмір`, each with thirty "patterns" that were
+  one word oversegmented thirty ways.
+- **The shortest stem that explains the word.** `процестерге` yields `процес` +
+  `-тер` + `-ге`, not `процестер` + `-ге`, so the nested prefixes of one word
+  stop voting for each other.
+- **Nothing already analysable, and nothing one letter from an entry.** `үйде`
+  is `үй` plus `-де` and is written bare in 2,049 books, which made it the
+  strongest-looking candidate of all; `аал`, `алл` and `айа` each passed the
+  paradigm test, because the corpus has enough scanning noise to inflect them,
+  and each is one letter from a word the lexicon has. Those two filters cut
+  6,803 candidates to 2,440 and took the precision cost of admitting them from
+  0.7 points to none.
+
+The result: **316 real words gained, none lost, 13 misspellings leaked**, and
+eleven of those thirteen are typos of the newly admitted words themselves —
+`деструкциялы`, `коринфе`, `этногенезің` — which is the irreducible cost of
+knowing a word at all. Recall 95.5% → 96.0%.
+
+They are kept in `data/discovered.tsv` rather than merged into the lexicon,
+because they are not the same kind of thing. Every entry in `lexicon.tsv` was
+offered by apertium, kazdict or the 2009 release and then gated; these were
+argued for by the corpus alone. They carry no part of speech, so `requires`
+refuses them — which is the right amount of confidence to extend to a word
+nobody has vouched for.
 
 ### A suffix voices its final stop too, not only an entry
 
