@@ -21,7 +21,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 
-from analyse import Analyser, read_elision, read_lexicon  # noqa: E402
+from analyse import (Analyser, read_elision, read_harmony,  # noqa: E402
+                     read_lexicon)
 from phonology import harmony, realise  # noqa: E402
 from template import load  # noqa: E402
 
@@ -178,6 +179,11 @@ WALKS = [
     ("көтерелік",   "-елік is the same person again"),
     ("сенбейді",    "negation after a nasal"),
     ("моральға",    "and a soft sign decides nothing"),
+    # Per-lexeme harmony, read off the books because no rule finds it.
+    ("тарихқа",     "тарих is back though its last vowel is front"),
+    ("миының",      "and so is ми"),
+    ("банкке",      "банк is front though its only vowel is back"),
+    ("октябрьден",  "октябрь is front"),
 ]
 
 HARMONY = [
@@ -214,6 +220,7 @@ def main() -> int:
             bad.append(f"{slot_id} on {stem!r} takes {refuse!r}, "
                        f"doubling a glide across the boundary")
     an = Analyser(tpl, read_lexicon(ROOT / "data/lexicon.tsv"),
+                  overrides=read_harmony(ROOT / "data/harmony.tsv"),
                   elision=read_elision(ROOT / "data/elision.tsv"))
     for word, why in STEMS + WALKS:
         if not an.accepts(word):

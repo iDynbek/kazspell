@@ -72,6 +72,23 @@ def read_elision(path: Path) -> dict[str, str]:
     return out
 
 
+def read_harmony(path: Path) -> dict[str, str]:
+    """entry -> the column it takes, where the letters predict the other one.
+
+    `мораль` is back and `медаль` is front, `тарих` is back and `хал` is front,
+    and no rule over the letters recovers any of it. tools/harmony_overrides.py
+    reads the answers off the books; this is where they are used.
+    """
+    if not path.exists():
+        return {}
+    out = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.startswith("#"):
+            form, column = line.split("\t")[:2]
+            out[form] = column
+    return out
+
+
 def tracks_of(features: frozenset[str]) -> tuple[str, ...]:
     """Which template tracks an entry can start on."""
     verbal = {"v", "v-trans", "v-intrans", "v-aux"}
@@ -190,6 +207,7 @@ class Analyser:
 @functools.lru_cache(maxsize=1)
 def default() -> Analyser:
     return Analyser(load(), read_lexicon(ROOT / "data/lexicon.tsv"),
+                    overrides=read_harmony(ROOT / "data/harmony.tsv"),
                     elision=read_elision(ROOT / "data/elision.tsv"))
 
 
@@ -203,6 +221,7 @@ def main() -> int:
     args = ap.parse_args()
 
     an = Analyser(load(), read_lexicon(args.lexicon),
+                  overrides=read_harmony(ROOT / "data/harmony.tsv"),
                   elision=read_elision(ROOT / "data/elision.tsv"))
     bad = 0
     for word in args.words:

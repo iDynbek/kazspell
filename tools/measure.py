@@ -33,7 +33,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from analyse import Analyser, read_elision, read_lexicon  # noqa: E402
+from analyse import (Analyser, read_elision, read_harmony,  # noqa: E402
+                     read_lexicon)
 from template import load  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -103,6 +104,7 @@ def main() -> int:
     attested = read_attested(args.attested)
     russian = read_russian(args.russian)
     an = Analyser(load(), read_lexicon(args.lexicon),
+                  overrides=read_harmony(ROOT / "data/harmony.tsv"),
                   elision=read_elision(ROOT / "data/elision.tsv"))
     rng = random.Random(args.seed)
 

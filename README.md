@@ -68,9 +68,11 @@ it takes; nothing downstream works until it does.
     tools/mark_russian.py         which attested types are Russian, so recall
                                   is not mostly a measure of how much of the
                                   corpus is not Kazakh
+    tools/harmony_overrides.py    which entries take the column their spelling
+                                  does not predict, read off the books
     tests/test_template.py        37 cases: real forms the template must build,
                                   real errors it must refuse
-    tests/test_phonology.py       141 cases: which allomorph each slot takes
+    tests/test_phonology.py       145 cases: which allomorph each slot takes
                                   on a given stem, decided by the books
 
 ### First measurement of the architecture
@@ -78,8 +80,8 @@ it takes; nothing downstream works until it does.
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
 | catches misspellings | **96.6%** | 96.4% | 99.4% |
-| accepts real Kazakh | **94.8%** | 98.1% | 82.1% |
-| accepts the corpus as it stands | 85.8% | — | — |
+| accepts real Kazakh | **95.1%** | 98.1% | 82.1% |
+| accepts the corpus as it stands | 86.0% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
 
@@ -138,6 +140,17 @@ missed weight is everyday vocabulary, and it came down to a handful of things.
   (`жай` + `-атын` = `жаятын`, 139 against none), and a loanword in `-ь`
   losing it before a vowel (`секретарь` + `-ы` = `секретары`). Undoing the
   spelling gives back the ordinary walk.
+
+- **Harmony is a rule with exceptions, and the books know them.**
+  `phonology.fits` has taken an `overrides` map since the beginning and nothing
+  ever filled it. `tools/harmony_overrides.py` fills it by asking the corpus
+  which spelling of `<entry> + -ға/-ге` is attested, over sixteen probes from
+  five slots: 23,969 entries confirm the letter rule, 386 contradict it —
+  `тарих` and `ми` are back, `банк` and `октябрь` are front — and 277 are
+  written both ways, `күнә` and `руль` among them, where refusing either column
+  would be refusing the language. A very short entry is never called
+  ambivalent: `қа` plus `-лар` finds `қалар`, which is `қал` plus `-ар`, and
+  that verdict is the one that switches a check off rather than moving it.
 
 - **Two missing forms and one missing slot.** `-йық/-йік` is `-айық` after a
   vowel-final stem (`ойнайық` 101, `байқайық` 88) and `-алық/-елік` is the same

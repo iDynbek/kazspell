@@ -286,7 +286,8 @@ def fits(stem: str, morpheme: str, slot_morphemes: tuple[str, ...],
     want = morpheme_harmony(morpheme)
     if want is not None:
         have = (overrides or {}).get(stem) or harmony(stem)
-        if have is not None and have != want:
+        # `both` is a lexeme the books write either way, not a missing answer.
+        if have is not None and have != "both" and have != want:
             return False
 
     ends_vowel = final(stem) in VOWELS
