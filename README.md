@@ -65,6 +65,9 @@ it takes; nothing downstream works until it does.
     tools/analyse.py              the reference recogniser: stem plus a legal
                                   walk, in the shapes the stem licenses
     tools/measure.py              recall on the books, precision on typos
+    tools/mark_russian.py         which attested types are Russian, so recall
+                                  is not mostly a measure of how much of the
+                                  corpus is not Kazakh
     tests/test_template.py        37 cases: real forms the template must build,
                                   real errors it must refuse
     tests/test_phonology.py       83 cases: which allomorph each slot takes on
@@ -75,9 +78,22 @@ it takes; nothing downstream works until it does.
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
 | catches misspellings | **96.7%** | 96.4% | 99.4% |
-| accepts real text | 85.0% | 98.1% | 82.1% |
+| accepts real Kazakh | **94.0%** | 98.1% | 82.1% |
+| accepts the corpus as it stands | 85.0% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
+
+Those last two rows are the same measurement over different denominators, and
+the gap between them is Russian. The 3,860 editions are Kazakh books that quote
+and code-switch, and 21.2% of the types in them are words a Russian dictionary
+accepts — which the recogniser is right to refuse and which counted against it
+anyway. `data/russian.tsv.gz` says which types those are; 94.0% is recall on
+the rest. Neither figure is the true one. The first is dragged down by Russian
+and the second drops the 8,600 words the two languages share — `да`, `бар`,
+`бала` — which are ours and are being given away. The truth is between them.
+
+The distinction was worth making because it changes what is left to do: the gap
+to the ≥98% target is four points, not thirteen.
 
 Not comparable line for line — kazspell is scored on the book corpus by
 book-weight and hunspell-kk on KazNERD by token — but the shape is what the
@@ -90,14 +106,10 @@ mysterious. Two stem alternations are in — the closed class that drops a vowel
 recall between them; the allomorph defects below were worth 2.7 more, and the
 second personal series 2.1 after that.
 
-Of 8,629 rejected forms, only 20.9% of the book-weight carries a Kazakh-only
-letter and is certainly ours to fix — down from 38.2% when this started, which
-is the useful way to read the number. The other 79.1% carries no Kazakh letter
-at all and is largely Russian: `которую`, `последний`, `отказаться`, text the
-checker ought to reject and which counts against recall anyway. Until the
-corpus is filtered that share is a floor on this measurement rather than a
-defect in the model, and finding out how much of it is really Russian is worth
-more now than any further morphology.
+Of 8,629 rejected forms, 64.5% of the book-weight is valid Russian —
+`которую`, `последний`, `отказаться` — and 20.9% carries a Kazakh-only letter
+and is certainly ours to fix. That second share was 38.2% when this started,
+which is the useful way to read it.
 
 ### The template is the specification, not a table in a script
 

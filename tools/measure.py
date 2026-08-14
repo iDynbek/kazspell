@@ -11,6 +11,14 @@ A misspelling that is itself an attested word is dropped from the test. That
 correction was worth 1.4 points to hunspell-kk's reported score and it applies
 here for the same reason: corrupting one real form very often lands on another.
 
+Recall is reported twice. The books are Kazakh books and 21.2% of the types in
+them are Russian — quoted, cited, code-switched — which the recogniser is right
+to refuse and which counts against it anyway. `data/russian.tsv.gz` says which
+types those are, and the second number is recall on the rest. Neither figure is
+the true one: the first is dragged down by Russian and the second drops some
+8,600 words Kazakh and Russian share, `да`, `бар` and `бала` among them. The
+truth is between them, and both move when the model does.
+
     python tools/measure.py --sample 20000
 """
 
@@ -51,6 +59,14 @@ def read_attested(path: Path) -> dict[str, int]:
                 (line.rstrip("\n").split("\t") for line in fh)}
 
 
+def read_russian(path: Path) -> set[str]:
+    if not path.exists():
+        return set()
+    with gzip.open(path, "rt", encoding="utf-8") as fh:
+        return {line.strip() for line in fh
+                if line.strip() and not line.startswith("#")}
+
+
 def typos(word: str, keys: dict[str, str]) -> list[tuple[str, str]]:
     out = []
     for i, ch in enumerate(word):
@@ -80,9 +96,12 @@ def main() -> int:
     ap.add_argument("--lexicon", type=Path, default=ROOT / "data/lexicon.tsv")
     ap.add_argument("--attested", type=Path, default=ROOT / "data/attested.tsv.gz")
     ap.add_argument("--misses", type=Path, help="write the rejected forms here")
+    ap.add_argument("--russian", type=Path, default=ROOT / "data/russian.tsv.gz",
+                    help="attested types a Russian dictionary claims")
     args = ap.parse_args()
 
     attested = read_attested(args.attested)
+    russian = read_russian(args.russian)
     an = Analyser(load(), read_lexicon(args.lexicon),
                   elision=read_elision(ROOT / "data/elision.tsv"))
     rng = random.Random(args.seed)
@@ -92,12 +111,19 @@ def main() -> int:
 
     start = time.time()
     accepted, tok_ok, tok_all, missed = 0, 0, 0, []
+    kaz_ok, kaz_all, kaz_types, kaz_accepted = 0, 0, 0, 0
     for word in sample:
         weight = attested[word]
         tok_all += weight
+        ours = word not in russian
+        kaz_all += weight if ours else 0
+        kaz_types += 1 if ours else 0
         if an.accepts(word):
             accepted += 1
             tok_ok += weight
+            if ours:
+                kaz_ok += weight
+                kaz_accepted += 1
         else:
             missed.append(word)
     elapsed = time.time() - start
@@ -107,7 +133,13 @@ def main() -> int:
     print(f"  by type   {accepted / len(sample):>7.1%}   "
           f"{accepted:,} of {len(sample):,}")
     print(f"  by book-weight {tok_ok / tok_all:>7.1%}")
-    print(f"  {len(sample) / max(elapsed, 1e-9):,.0f} words/second")
+    if russian:
+        print(f"\n  setting aside the {len(sample) - kaz_types:,} types a Russian "
+              f"dictionary claims:")
+        print(f"  by type   {kaz_accepted / kaz_types:>7.1%}   "
+              f"{kaz_accepted:,} of {kaz_types:,}")
+        print(f"  by book-weight {kaz_ok / kaz_all:>7.1%}")
+    print(f"\n  {len(sample) / max(elapsed, 1e-9):,.0f} words/second")
 
     keys = neighbours()
     cases, seen = [], set()
