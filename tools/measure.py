@@ -86,6 +86,35 @@ def typos(word: str, keys: dict[str, str]) -> list[tuple[str, str]]:
     return out
 
 
+def build_sample(attested: dict[str, int], rng: random.Random,
+                 size: int, min_docs: int) -> list[str]:
+    """The attested types to score, drawn the same way every run."""
+    pool = [w for w, n in attested.items() if n >= min_docs and len(w) > 1]
+    return rng.sample(pool, min(size, len(pool)))
+
+
+def build_typos(sample: list[str], attested: dict[str, int],
+                rng: random.Random, limit: int) -> list[tuple[str, str, str]]:
+    """(kind, the real word, the misspelling) — the same set every run.
+
+    `rng` must be the one `build_sample` was drawn with, and drawn from first:
+    the shuffle continues that stream, and a fresh generator would give a
+    different set of misspellings and a different score.
+    """
+    keys = neighbours()
+    cases, seen = [], set()
+    words = [w for w in sample if len(w) > 3]
+    rng.shuffle(words)
+    for word in words:
+        for kind, bad in typos(word, keys):
+            if bad not in attested and bad not in seen and bad != word:
+                seen.add(bad)
+                cases.append((kind, word, bad))
+        if len(cases) >= limit:
+            break
+    return cases[:limit]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -108,8 +137,7 @@ def main() -> int:
                   elision=read_elision(ROOT / "data/elision.tsv"))
     rng = random.Random(args.seed)
 
-    pool = [w for w, n in attested.items() if n >= args.min_docs and len(w) > 1]
-    sample = rng.sample(pool, min(args.sample, len(pool)))
+    sample = build_sample(attested, rng, args.sample, args.min_docs)
 
     start = time.time()
     accepted, tok_ok, tok_all, missed = 0, 0, 0, []
@@ -143,18 +171,7 @@ def main() -> int:
         print(f"  by book-weight {kaz_ok / kaz_all:>7.1%}")
     print(f"\n  {len(sample) / max(elapsed, 1e-9):,.0f} words/second")
 
-    keys = neighbours()
-    cases, seen = [], set()
-    words = [w for w in sample if len(w) > 3]
-    rng.shuffle(words)
-    for word in words:
-        for kind, bad in typos(word, keys):
-            if bad not in attested and bad not in seen and bad != word:
-                seen.add(bad)
-                cases.append((kind, word, bad))
-        if len(cases) >= args.typos:
-            break
-    cases = cases[:args.typos]
+    cases = build_typos(sample, attested, rng, args.typos)
 
     caught = sum(1 for _k, _o, bad in cases if not an.accepts(bad))
     print(f"\nprecision, on {len(cases):,} misspellings of those same words")

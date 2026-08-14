@@ -70,6 +70,9 @@ it takes; nothing downstream works until it does.
                                   corpus is not Kazakh
     tools/harmony_overrides.py    which entries take the column their spelling
                                   does not predict, read off the books
+    tools/regress.py              which words changed their verdict since last
+                                  time, so a score moving can be checked rather
+                                  than believed
     tests/test_template.py        37 cases: real forms the template must build,
                                   real errors it must refuse
     tests/test_phonology.py       145 cases: which allomorph each slot takes
@@ -80,8 +83,8 @@ it takes; nothing downstream works until it does.
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
 | catches misspellings | **96.6%** | 96.4% | 99.4% |
-| accepts real Kazakh | **95.1%** | 98.1% | 82.1% |
-| accepts the corpus as it stands | 86.0% | — | — |
+| accepts real Kazakh | **95.5%** | 98.1% | 82.1% |
+| accepts the corpus as it stands | 86.4% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
 
@@ -162,6 +165,53 @@ Of 8,629 rejected forms, 64.5% of the book-weight is valid Russian —
 `которую`, `последний`, `отказаться` — and 20.9% carries a Kazakh-only letter
 and is certainly ours to fix. That second share was 38.2% when this started,
 which is the useful way to read it.
+
+### A score moving is not a review
+
+Precision drifted from 97.1% to 96.6% over a dozen changes, and a summary
+cannot say whether that was right. Every such move is a net of two things —
+misspellings newly let through, which is a fault, and misspellings newly
+caught, which is not — and the whole method here is that each claim is
+checkable against the books, so the verdicts are kept as an artefact.
+
+`data/verdicts.tsv.gz` holds the recogniser's answer for all 40,000 probes in
+the harness, and `tools/regress.py` prints the ones that differ:
+
+    gained   a real word now accepted        good, if the reason is a rule
+    lost     a real word now refused         a regression unless it was not a word
+    caught   a misspelling now refused       good
+    leaked   a misspelling now accepted      the one to read carefully
+
+`leaked` prints the analysis that let each one in, because that is the actual
+question: which walk accepts this, and should it.
+
+Run against the state before any of this session's work, the whole of it comes
+to 866 real words gained, 20 lost, 22 misspellings caught and 44 leaked — small
+enough to read every line, which is the point. Doing so found two bugs that no
+score would have shown.
+
+A harmony override was being looked up by surface rather than by entry, so it
+reached any intermediate string that happened to be another entry: `кіріп` is
+one, and its column refused `кіріппіз` — the ordinary `кір` plus `-іп` plus
+`-піз`. An override is a fact about the lexeme, so it applies to the suffix the
+lexeme takes and to nothing after it.
+
+And the probes deciding those overrides were all nominal, so a verb was judged
+on whatever nominal suffix its letters collided with. `си` came out back on
+`сида` while `сиеді` and `сиіп`, 18 books and 70, went unseen. With the verbal
+probes in, `қайт` reads as written both ways, which is what `қайтеді` is —
+1,114 books, and the single largest miss in the corpus.
+
+Of the 20 real words still refused, the ones worth checking turned out to be
+correct refusals: `елімні` against `елімді` is 4 books against 407, `миды`
+against `миді` 150 against 2, and `күйгенімден` against `күйгенімнен` 4 against
+34, which is the `-нен` after a possessive that this session put in.
+
+Of the 44 leaks, 29 rest on a lexicon entry of three letters or fewer — `аб`,
+`аи`, `аль`, `хаг`, `қм`, `ст`, `өме` — which are not Kazakh words. The new
+grammar did not become wrong; it gave the junk already in the wordlist more
+ways to combine. That is a lexicon problem, and it is now the thing between
+96.6% precision and the ≥99% target.
 
 ### The template is the specification, not a table in a script
 

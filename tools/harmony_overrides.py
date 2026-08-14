@@ -38,6 +38,11 @@ PROBES = [
     ("дан", "ден"), ("тан", "тен"),                      # шығыс
     ("дың", "дің"), ("тың", "тің"), ("ның", "нің"),      # ілік
     ("ы", "і"), ("ым", "ім"), ("ың", "ің"), ("сы", "сі"),  # тәуелдік
+    # And the verbal ones. Without them a verb is judged on whatever nominal
+    # suffix its letters happen to collide with, which is how `си` came out
+    # back on `сида` while `сиеді` and `сиіп`, 18 books and 70, went unseen.
+    ("ған", "ген"), ("қан", "кен"), ("ады", "еді"), ("ып", "іп"),
+    ("са", "се"), ("атын", "етін"), ("мады", "меді"), ("бады", "беді"),
 ]
 
 

@@ -192,7 +192,14 @@ class Analyser:
                     continue
                 if slot.requires and not set(slot.requires) <= features:
                     continue
-                if not fits(surface, morpheme, slot.morphemes, self.overrides,
+                # The override is a fact about the entry, so it applies to the
+                # suffix the entry takes and to nothing after it. Looking it up
+                # by surface let it reach any intermediate string that happened
+                # to be another entry: `кіріп` is one, and its column refused
+                # `кіріппіз` the ordinary `кір` plus `-іп` plus `-піз`. Once a
+                # suffix is on, the surface has vowels of its own.
+                if not fits(surface, morpheme, slot.morphemes,
+                            self.overrides if prev is None else None,
                             slot.a_after):
                     continue
                 nxt = slot.restart or slot.track
