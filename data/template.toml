@@ -156,6 +156,7 @@ order = 40
 group = "septik"
 after = ["tauelik"]
 morphemes = ["н"]
+a_after = ["vowel"]   # қаласын, үйін — the possessive leaves a vowel
 
 [[slot]]
 id = "jatys"
@@ -175,6 +176,7 @@ order = 40
 group = "septik"
 after = ["tauelik"]
 morphemes = ["нда", "нде"]
+a_after = ["vowel"]   # қаласында — likewise
 
 [[slot]]
 id = "shygys"
@@ -198,6 +200,7 @@ order = 40
 group = "septik"
 after = ["tauelik"]
 morphemes = ["нан", "нен"]
+a_after = ["vowel"]   # қаласынан — likewise
 
 [[slot]]
 id = "komektes"
@@ -335,19 +338,43 @@ group = "finiteness"
 restart = "n"
 morphemes = ["у"]
 
+# The tenses and the moods are one slot each in most descriptions, and cannot
+# be here, because the personal endings that follow them are not the same set.
+# `бардым` and `барсам` take -м; `барадым` and `барсыным` are not words. Only
+# two of these six categories take that series, so only they can be named in
+# the `after` of the slot that carries it — which means they have to be slots.
+
 [[slot]]
-id = "shaq"
-name = "шақ"
-gloss = "finite tense"
+id = "shaq_jedel"
+name = "жедел өткен шақ"
+gloss = "simple past — takes the -м/-ң/-қ personal series"
 track = "v"
 order = 30
 group = "finiteness"
-morphemes = ["ды", "ді", "ты", "ті", "ады", "еді", "йды", "йді", "айды", "ейді"]
+morphemes = ["ды", "ді", "ты", "ті"]
+
+[[slot]]
+id = "shaq_osy"
+name = "ауыспалы осы шақ"
+gloss = "present, third person — the person is already in it"
+track = "v"
+order = 30
+group = "finiteness"
+morphemes = ["ады", "еді", "йды", "йді", "айды", "ейді"]
+
+[[slot]]
+id = "rai_shart"
+name = "шартты рай"
+gloss = "conditional — takes the -м/-ң/-қ personal series, as the past does"
+track = "v"
+order = 30
+group = "finiteness"
+morphemes = ["са", "се"]
 
 [[slot]]
 id = "rai"
 name = "рай"
-gloss = "mood: шартты, қалау, бұйрық"
+gloss = "mood: қалау, бұйрық"
 track = "v"
 order = 30
 group = "finiteness"
@@ -356,7 +383,6 @@ group = "finiteness"
 # like the possessives they are not. Both were read as errors when they were
 # missing from this list, and both took real forms out of the language with them.
 morphemes = [
-  "са", "се",
   "йын", "йін", "айын", "ейін", "ғай", "гей", "қай", "кей",
   # бұйрық рай, third person and first plural: `барсын`, `барайық`. Both were
   # absent, and both are everyday forms — apertium-kaz has carried them all along.
@@ -364,6 +390,28 @@ morphemes = [
   "ғы", "гі", "қы", "кі",
   "ыңыз", "іңіз", "ыңдар", "іңдер", "ңыз", "ңіз", "ңдар", "ңдер",
   "шы", "ші", "ңызшы", "ңізші",
+]
+
+# Two personal series, not one. apertium-kaz keeps them apart as V-PERS-S1 and
+# V-PERS-S2, and the second — `бардым`, `барсам`, `бардық`, `барсақ` — was
+# missing entirely, so the past and the conditional had no person at all
+# outside the third: `бардық` is in 497 books, `келдік` in 1,147, `келсек` in
+# 855, and none of them could be built.
+
+[[slot]]
+id = "jiktik_otken"
+name = "жіктік жалғау (жедел өткен шақ пен шартты рай)"
+gloss = "personal endings on the past and the conditional"
+track = "v"
+order = 50
+after = ["shaq_jedel", "rai_shart"]
+morphemes = [
+  "м", "ң", "қ", "к",
+  "ңыз", "ңіз", "ңдар", "ңдер",
+  "ңыздар", "ңіздер",
+  # Third plural, optional and much rarer than the rest: `бардылар` 20 books,
+  # `барсалар` 6. The plural of a verb, not the көптік of a noun.
+  "лар", "лер",
 ]
 
 [[slot]]

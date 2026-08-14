@@ -47,6 +47,15 @@ A_INITIALS = set("лнмс")
 B_INITIALS = set("дбғг")
 C_INITIALS = set("тпқк")
 
+# The four consonant series Kazakh actually alternates on. Nothing outside them
+# is an alternation, however alike two morphemes look: `-мыз` and `-сыз` differ
+# in one letter and are the first plural and the second formal, not two shapes
+# of one ending, and `-йін` and `-сін` likewise. Grouping either pair put a
+# real ending behind the other's conditions — and because the group was keyed
+# on a set of letters, which of the two lost was decided by iteration order.
+SERIES = (frozenset("лдт"), frozenset("ндт"),
+          frozenset("мбп"), frozenset("ғгқк"))
+
 RHOTIC = set("р")
 LIQUID = set("л")
 NASAL = set("мнң")
@@ -118,8 +127,34 @@ def harmony(word: str) -> str | None:
     return "back" if stem != word else None
 
 
+# `қ` and `ғ` are the back consonants and `к` and `г` the front ones, which is
+# the only thing that distinguishes the first plural of `бардық` from that of
+# `келдік`: the morpheme is a single letter and carries no vowel to harmonise.
+VELAR_HARMONY = {"қ": "back", "ғ": "back", "к": "front", "г": "front"}
+
+
 def morpheme_harmony(morpheme: str) -> str | None:
-    return None if morpheme in INVARIANT else harmony(morpheme)
+    if morpheme in INVARIANT:
+        return None
+    return harmony(morpheme) or VELAR_HARMONY.get(morpheme)
+
+
+def _alternations(members: list[str]) -> list[list[str]]:
+    """Split morphemes that differ only in their initial into real series.
+
+    Largest series first, so `-ның/-дың/-тың` is read as the н series and not
+    as the л one minus its `-лың`. What no series claims stands alone, and
+    standing alone is what makes it unconditioned.
+    """
+    out, rest = [], list(members)
+    while rest:
+        initials = {m[0] for m in rest}
+        series = max(SERIES, key=lambda s: len(s & initials))
+        if len(series & initials) < 2:
+            return out + [[m] for m in rest]
+        out.append([m for m in rest if m[0] in series])
+        rest = [m for m in rest if m[0] not in series]
+    return out
 
 
 @functools.lru_cache(maxsize=None)
@@ -138,11 +173,27 @@ def series_finals(morphemes: tuple[str, ...],
 
     families: dict[tuple[str, str | None], list[str]] = collections.defaultdict(list)
     for m in morphemes:
-        if m and m[0] not in VOWELS:
-            families[(m[1:], morpheme_harmony(m))].append(m)
+        if not m or m[0] in VOWELS:
+            continue
+        # A one-letter morpheme is no evidence of anything. `-м`, `-ң`, `-қ`
+        # and `-к` are four persons of the past, not four shapes of one
+        # suffix, and reading them as a series put `-қ` among the voiceless
+        # finals — where `барды` cannot reach it, so `бардық` was not a word.
+        # Where a single letter really does alternate the slot declares it.
+        if not m[1:] and declared is None:
+            continue
+        families[(m[1:], morpheme_harmony(m))].append(m)
 
     out: dict[str, frozenset[str]] = {}
-    for members in families.values():
+    for members in (alt for family in families.values()
+                    for alt in _alternations(family)):
+        # One member is not an alternation. `-сың` is the whole second person
+        # and nothing in жіктік competes with it, so reading its `с` as the
+        # A-member of a series confined it to vowel-final stems and took
+        # `келмейсің` and `барғансың` out of the language. A slot that does
+        # alternate on a single written member says so with `a_after`.
+        if len(members) == 1 and declared is None:
+            continue
         initials = {m[0] for m in members}
         a_initial = next((i for i in initials if i in A_INITIALS), None)
         a_set = declared if declared is not None else (
@@ -178,6 +229,21 @@ def linking_pairs(morphemes: tuple[str, ...]) -> frozenset[str]:
                      if ("ы" + m) in have or ("і" + m) in have)
 
 
+@functools.lru_cache(maxsize=None)
+def epenthetic(morphemes: tuple[str, ...]) -> frozenset[str]:
+    """Members like `сы` beside `ы`, whose consonant is there to break hiatus.
+
+    The same repair as `ым`/`м` and the other way round: a consonant-final stem
+    takes `аты`, a vowel-final one takes `баласы`. It is not an alternation
+    between two consonants, so the series machinery cannot see it, and without
+    it `*атсы` is as licensed as `баласы`.
+    """
+    have = set(morphemes)
+    return frozenset(m for m in morphemes
+                     if len(m) > 1 and m[0] not in VOWELS
+                     and m[1] in VOWELS and m[1:] in have)
+
+
 def fits(stem: str, morpheme: str, slot_morphemes: tuple[str, ...],
          overrides: dict[str, str] | None = None,
          a_after: tuple[str, ...] = ()) -> bool:
@@ -205,6 +271,8 @@ def fits(stem: str, morpheme: str, slot_morphemes: tuple[str, ...],
         return False
     if morpheme in linking_pairs(slot_morphemes):
         return ends_vowel              # `бала-м`, never `ат-м`
+    if morpheme in epenthetic(slot_morphemes):
+        return ends_vowel              # `бала-сы`, never `ат-сы`
 
     return licensed(stem, morpheme, slot_morphemes, a_after)
 

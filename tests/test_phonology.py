@@ -65,6 +65,14 @@ CASES = [
     ("tauelik_of", "әкем", "дікі", "нікі", "әкемдікі"),
     ("tauelik_of", "бала", "нікі", "дікі", "баланікі"),
 
+    # The other hiatus repair, the same as `ым`/`м` the other way round: a
+    # consonant-final stem takes `аты`, a vowel-final one takes `баласы`.
+    ("tauelik", "бала", "сы", "ы",  "баласы"),
+    ("tauelik", "ат",   "ы",  "сы", "аты"),
+    # And the -н cases, which only ever follow a possessive and so only ever
+    # follow a vowel.
+    ("tabys_px", "қаласы", "н", None, "қаласын"),
+
     # A word-final `у` carries no harmony of its own; anywhere else it is an
     # ordinary back vowel. `келуге` is in 817 books and `келуға` in none.
     ("barys", "келу",   "ге", "ға", "келуге"),
@@ -76,7 +84,23 @@ CASES = [
 
 # No geminate glide across a boundary: `болу` does not take a second тұйық
 # етістік, and `сүй` takes `сүйеді` rather than `*сүййді`.
-NO_GEMINATE = [("tuiyq", "болу", "у"), ("shaq", "сүй", "йді")]
+NO_GEMINATE = [("tuiyq", "болу", "у"), ("shaq_osy", "сүй", "йді")]
+
+# Four persons, not four shapes of one suffix, so nothing may confine `-қ` to
+# the finals a series would give it — `барды` has to reach it. What does apply
+# is harmony, on the consonant, because neither morpheme carries a vowel.
+PERSONAL = [
+    ("jiktik_otken", "барды", "қ",  "к",  "бардық"),
+    ("jiktik_otken", "келді", "к",  "қ",  "келдік"),
+    ("jiktik_otken", "барса", "қ",  "к",  "барсақ"),
+    ("jiktik_otken", "келсе", "к",  "қ",  "келсек"),
+    ("jiktik_otken", "барды", "м",  None, "бардым"),
+    ("jiktik_otken", "барды", "ңыз", "ңіз", "бардыңыз"),
+    # And the second person of the other series is not a series member either:
+    # `-сың` is the whole ending, so it follows a consonant perfectly well.
+    ("jiktik_v", "келмей", "сің", None, "келмейсің"),
+    ("jiktik_n", "барған", "сың", None, "барғансың"),
+]
 
 HARMONY = [
     ("такси",       "front"),   # таксиді
@@ -99,12 +123,12 @@ def main() -> int:
         slot = tpl.by_id[slot_id]
         return realise(stem, slot.morphemes, None, slot.a_after)
 
-    for slot_id, stem, want, refuse, word in CASES:
+    for slot_id, stem, want, refuse, word in CASES + PERSONAL:
         got = shapes(slot_id, stem)
         if want not in got:
             bad.append(f"{slot_id} on {stem!r} will not take {want!r} "
                        f"({word}); it offers {got}")
-        if refuse in got:
+        if refuse is not None and refuse in got:
             bad.append(f"{slot_id} on {stem!r} takes {refuse!r}, "
                        f"but the word is {word}")
     for slot_id, stem, refuse in NO_GEMINATE:
@@ -121,8 +145,10 @@ def main() -> int:
     if bad:
         print(f"\n{len(bad)} failures")
         return 1
-    print(f"{len(CASES) * 2 + len(NO_GEMINATE) + len(HARMONY)} cases pass: "
-          f"{len(CASES)} allomorph choices both ways, "
+    checked = sum(2 if refuse is not None else 1
+                  for _s, _st, _w, refuse, _word in CASES + PERSONAL)
+    print(f"{checked + len(NO_GEMINATE) + len(HARMONY)} cases pass: "
+          f"{len(CASES)} allomorph choices, {len(PERSONAL)} personal endings, "
           f"{len(NO_GEMINATE)} geminates refused, "
           f"{len(HARMONY)} harmony classes")
     return 0

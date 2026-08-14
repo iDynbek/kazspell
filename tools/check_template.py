@@ -78,6 +78,18 @@ TAG_SLOT = {
     "gna_until": "kosemshe", "gna_after": "kosemshe",
 }
 
+# Several of those names are categories rather than slots. apertium reports one
+# септік under six tags and we hold it in ten slots; it reports one шақ where we
+# hold two, because the past takes a personal series the present does not. The
+# comparison is per category, so our slots are folded back into one first.
+BUCKETED = {"shaq_jedel": "shaq", "shaq_osy": "shaq", "rai_shart": "rai"}
+
+
+def bucket(slot) -> str:
+    if slot.group == "septik":
+        return "septik"
+    return BUCKETED.get(slot.id, slot.id)
+
 ENTRY = re.compile(r"^(%<[^ :]*%>):%>(\S+)")
 
 
@@ -198,7 +210,9 @@ def main() -> int:
 
     tpl = load()
     theirs = apertium_suffixes(args.lexc)
-    ours = {s.id: set(s.morphemes) for s in tpl.slots}
+    ours = collections.defaultdict(set)
+    for slot in tpl.slots:
+        ours[bucket(slot)] |= set(slot.morphemes)
     # Everything the template knows, anywhere: a form filed under a different
     # slot is a disagreement about analysis, not a missing morpheme, and the
     # two are worth telling apart.

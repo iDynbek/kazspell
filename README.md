@@ -50,7 +50,7 @@ only way that dictionary stops being mined.
 Phase 1, per-lexeme paradigm assignment. Every entry has to say which families
 it takes; nothing downstream works until it does.
 
-    data/template.toml            the suffix template: 17 slots, their order,
+    data/template.toml            the suffix template: 31 slots, their order,
                                   their exclusions, the entry features they
                                   require, and where a slot derives a new stem
     tools/template.py             load it, refuse it if incoherent, answer the
@@ -65,17 +65,17 @@ it takes; nothing downstream works until it does.
     tools/analyse.py              the reference recogniser: stem plus a legal
                                   walk, in the shapes the stem licenses
     tools/measure.py              recall on the books, precision on typos
-    tests/test_template.py        32 cases: real forms the template must build,
+    tests/test_template.py        37 cases: real forms the template must build,
                                   real errors it must refuse
-    tests/test_phonology.py       65 cases: which allomorph each slot takes on
+    tests/test_phonology.py       83 cases: which allomorph each slot takes on
                                   a given stem, decided by the books
 
 ### First measurement of the architecture
 
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
-| catches misspellings | **96.9%** | 96.4% | 99.4% |
-| accepts real text | 82.9% | 98.1% | 82.1% |
+| catches misspellings | **96.7%** | 96.4% | 99.4% |
+| accepts real text | 85.0% | 98.1% | 82.1% |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
 
@@ -87,18 +87,17 @@ Recall is the open side, and open for reasons that are known rather than
 mysterious. Two stem alternations are in — the closed class that drops a vowel
 (`мойын` → `мойнына`) and the voicing of a final stop before a vowel (`мектеп`
 → `мектебін`, `амандық` → `амандығын`) — worth 3.3 points of book-weighted
-recall between them, and the four allomorph defects below were worth 2.7 more.
+recall between them; the allomorph defects below were worth 2.7 more, and the
+second personal series 2.1 after that.
 
-What remains, in the order the misses say to take it: the personal endings that
-follow the past and the conditional (`бастады-қ`, `кір-се-м`, `қал-ар-мыз`),
-which are a different жіктік series from `-мын/-сың` and are not in the
-template at all; then the proper names; then the part of speech.
-
-Of 9,219 rejected forms, 29.3% of the book-weight carries a Kazakh-only letter
-and is certainly ours to fix. 67.0% carries no Kazakh letter at all and is
-mostly Russian — `которую`, `последний`, `отказаться` — which the checker ought
-to reject and which counts against recall anyway. Until the corpus is filtered,
-that share is a floor on this number rather than a defect in the model.
+Of 8,629 rejected forms, only 20.9% of the book-weight carries a Kazakh-only
+letter and is certainly ours to fix — down from 38.2% when this started, which
+is the useful way to read the number. The other 79.1% carries no Kazakh letter
+at all and is largely Russian: `которую`, `последний`, `отказаться`, text the
+checker ought to reject and which counts against recall anyway. Until the
+corpus is filtered that share is a floor on this measurement rather than a
+defect in the model, and finding out how much of it is really Russian is worth
+more now than any further morphology.
 
 ### The template is the specification, not a table in a script
 
@@ -182,6 +181,40 @@ identically and partition the finals differently, at which point the letter
 `н` could not carry the answer for both. `a_after` says it per slot instead,
 which is a declaration, and `tools/template.py` refuses one on a slot that has
 no A-member to declare it for.
+
+### Two personal series, and what looking alike is not
+
+Kazakh has two sets of personal endings and the template had one. `-мын/-сың/
+-мыз` follows the future, the participle and the copula — `барармын`,
+`барғансың` — and `-м/-ң/-қ/-ңыз` follows the simple past and the conditional:
+`бардым`, `бардық`, `келсек`, `барсаңыз`. apertium-kaz keeps them apart as
+`V-PERS-S1` and `V-PERS-S2`; here the second did not exist, so the past and the
+conditional had no person outside the third. `келдік` is in 1,147 of 3,860
+books, `келсек` in 855, and neither could be built.
+
+Adding it forced шақ and рай apart into `shaq_jedel`/`shaq_osy` and
+`rai_shart`/`rai`, because `after` names slots and only two of those six
+categories take the series — `барадым` and `барсыным` are not words. That is
+the same reason each септік is already its own slot: a category that behaves
+differently has to be nameable.
+
+The series also broke two assumptions in the phonology, both of the same kind —
+morphemes that look alike being read as shapes of one morpheme.
+
+- **A one-letter morpheme is no evidence of anything.** `-м`, `-ң`, `-қ` and
+  `-к` are four persons, not four shapes, and reading them as an alternation
+  put `-қ` among the endings that follow a voiceless final, where `барды`
+  cannot reach it. What `-қ` and `-к` do carry is harmony, on the consonant,
+  since neither has a vowel to carry it with.
+
+- **`-мыз` and `-сыз` are not an alternation either**, nor are `-йін` and
+  `-сін`. Each pair differs in one letter and the members are different
+  endings. The grouping was keyed on a set of letters, so which of the two was
+  confined to the other's conditions came out of set iteration order — a bug
+  that changed answers between runs of the same code, and it was `қалармыз`
+  that fell out this time. An alternation now has to lie inside one of the four
+  consonant series the language actually has, `л/д/т`, `н/д/т`, `м/б/п`,
+  `ғ/г/қ/к`, and what none of them claims stands alone and is unconditioned.
 
 ### The lexicon is rebuilt, not inherited
 
