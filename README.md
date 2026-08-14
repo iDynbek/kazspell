@@ -234,7 +234,21 @@ not judgements at all. Twelve were candidates the model silently dropped from a
 batch of twenty and this tool recorded as refusals; ten were `блокнот`, `хаос`,
 `карбюратор` and `норматив`, which it called foreign and which a Kazakh speller
 plainly needs. Only seven were real mistakes. Re-asking for dropped items and
-saying what a loanword is took the balanced score to 76%.
+saying what a loanword is gives:
+
+    of 80 real words it kept 65 (81%)
+    of 80 non-words it refused 58 (72%)
+
+which is what this is worth and no more. Of the 87 strings it calls words, 65
+are — so on a pool half junk it is a filter of about 75% precision. That is
+useful for ranking 4,363 candidates nobody would otherwise read, and useless as
+an authority, which is why it is not one.
+
+The requests are also worth pacing properly. Sent one after another they are
+limited by latency long before anyone's rate limit — a run entitled to twenty
+requests a minute was managing four, and 160 strings took thirty-five minutes.
+Six in the air at once takes it to ten, with no more 429s than before, which is
+none.
 
 Which is exactly the situation `tools/optimise_triage.py` is for. The control
 set makes a prompt *scorable*, and anything scorable can be optimised, so GEPA

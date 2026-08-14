@@ -111,13 +111,19 @@ class Limiter:
     delay doubles on every 429 and decays back once requests are landing again.
     """
 
-    def __init__(self, rpm: float, cap: int):
+    def __init__(self, rpm: float, cap: int, concurrency: int = 1):
         self.interval = 60.0 / max(rpm, 0.1)
         self.cap = cap
         self.used = 0
         self.last = 0.0
         self.penalty = 0.0
         self.lock = asyncio.Lock()
+        # A free model answers a batch in roughly a minute, so requests sent
+        # one after another are limited by latency long before they are limited
+        # by anyone's rate limit: a run that used no more than 14 requests a
+        # minute of its allowance was managing four. The pacing above still
+        # applies; this is how many may be in the air while it does.
+        self.slots = asyncio.Semaphore(max(1, concurrency))
 
     async def take(self) -> None:
         if self.used >= self.cap:
@@ -140,7 +146,8 @@ async def ask(agent, limiter: Limiter, words: list[str],
     for attempt in range(attempts):
         await limiter.take()
         try:
-            result = await agent.run(prompt)
+            async with limiter.slots:
+                result = await agent.run(prompt)
         except Exception as exc:
             if "429" in str(exc) or "rate" in str(exc).lower():
                 limiter.refused()
@@ -226,28 +233,37 @@ async def run(models: list[str], words: list[str], limiter: Limiter,
             agent = build_agent(model_id)
             print(f"{model_id}: {len(todo):,} to do, "
                   f"{len(todo) // size + 1} requests", file=sys.stderr)
-            for i in range(0, len(todo), size):
-                chunk = todo[i:i + size]
-                try:
-                    got = await ask_all(agent, limiter, chunk)
-                except RuntimeError as exc:
-                    print(f"  stopping: {exc}", file=sys.stderr)
-                    return done
-                except Exception as exc:
-                    print(f"  batch failed, skipping: {type(exc).__name__} "
-                          f"{str(exc)[:120]}", file=sys.stderr)
-                    continue
-                for word in chunk:
-                    j = got.get(word)
-                    row = {"model": model_id, "word": word,
-                           "verdict": j.verdict if j else "missing",
-                           "lemma": j.lemma if j else "",
-                           "pos": j.pos if j else ""}
-                    done[model_id][word] = row
-                    log.write(json.dumps(row, ensure_ascii=False) + "\n")
+            chunks = [todo[i:i + size] for i in range(0, len(todo), size)]
+            stop = False
+            for wave in range(0, len(chunks), limiter.slots._value or 1):
+                group = chunks[wave:wave + (limiter.slots._value or 1)]
+                results = await asyncio.gather(
+                    *(ask_all(agent, limiter, c) for c in group),
+                    return_exceptions=True)
+                for chunk, got in zip(group, results):
+                    if isinstance(got, RuntimeError):
+                        print(f"  stopping: {got}", file=sys.stderr)
+                        stop = True
+                        break
+                    if isinstance(got, BaseException):
+                        print(f"  batch failed, skipping: "
+                              f"{type(got).__name__} {str(got)[:100]}",
+                              file=sys.stderr)
+                        continue
+                    for word in chunk:
+                        j = got.get(word)
+                        row = {"model": model_id, "word": word,
+                               "verdict": j.verdict if j else "missing",
+                               "lemma": j.lemma if j else "",
+                               "pos": j.pos if j else ""}
+                        done[model_id][word] = row
+                        log.write(json.dumps(row, ensure_ascii=False) + "\n")
                 log.flush()
-                print(f"  {min(i + size, len(todo)):,}/{len(todo):,}",
-                      end="\r", file=sys.stderr)
+                seen = min((wave + len(group)) * size, len(todo))
+                print(f"  {seen:,}/{len(todo):,}  "
+                      f"{limiter.used} requests", end="\r", file=sys.stderr)
+                if stop:
+                    return done
             print(file=sys.stderr)
     return done
 
@@ -265,6 +281,8 @@ def main() -> int:
                     help="requests per minute, across all models")
     ap.add_argument("--cap", type=int, default=900,
                     help="stop after this many requests")
+    ap.add_argument("--concurrency", type=int, default=6,
+                    help="requests in the air at once")
     ap.add_argument("--limit", type=int, help="only the first N candidates")
     ap.add_argument("--calibrate", type=int, metavar="N",
                     help="score the models on N strings whose answer is known")
@@ -289,7 +307,7 @@ def main() -> int:
             words = words[:args.limit]
         checkpoint = args.checkpoint
 
-    limiter = Limiter(args.rpm, args.cap)
+    limiter = Limiter(args.rpm, args.cap, args.concurrency)
     done = asyncio.run(run(args.models, words, limiter, checkpoint, args.batch))
     print(f"{limiter.used} requests used", file=sys.stderr)
 
