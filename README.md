@@ -72,6 +72,11 @@ it takes; nothing downstream works until it does.
                                   does not predict, read off the books
     tools/discover.py             stems the books inflect that no source
                                   vouched for, as candidates to be read
+    tools/triage.py               ask a model which candidates are words, and
+                                  measure how often it is right before believing
+                                  any of it
+    tools/optimise_triage.py      let GEPA write that prompt, scored on the
+                                  strings whose answer is already known
     tools/regress.py              which words changed their verdict since last
                                   time, so a score moving can be checked rather
                                   than believed
@@ -207,6 +212,51 @@ offered by apertium, kazdict or the 2009 release and then gated; these were
 argued for by the corpus alone. They carry no part of speech, so `requires`
 refuses them — which is the right amount of confidence to extend to a word
 nobody has vouched for.
+
+### A model can read the candidates, but not decide them
+
+2,440 candidates is more than anyone wants to read and the corpus cannot finish
+the argument: it says a string inflects, not whether the thing inflecting is a
+word or scanning noise that takes suffixes. That is a question about the
+language, and a model that has read Kazakh can answer it faster than a person.
+
+It cannot answer it reliably, and the useful part of `tools/triage.py` is that
+it says so. Every run mixes in controls whose answer is already known —
+positives are entries apertium hand-filed with a part of speech, negatives are
+misspellings attested in none of the 3,860 editions — so each run reports its
+own accuracy rather than asking to be trusted. The first one:
+
+    of 60 real words it kept 31 (52%)
+    of 60 non-words it refused 50 (83%)
+
+52% would be useless as a gate, but reading the 29 failures showed most were
+not judgements at all. Twelve were candidates the model silently dropped from a
+batch of twenty and this tool recorded as refusals; ten were `блокнот`, `хаос`,
+`карбюратор` and `норматив`, which it called foreign and which a Kazakh speller
+plainly needs. Only seven were real mistakes. Re-asking for dropped items and
+saying what a loanword is took the balanced score to 76%.
+
+Which is exactly the situation `tools/optimise_triage.py` is for. The control
+set makes a prompt *scorable*, and anything scorable can be optimised, so GEPA
+mutates the prompt against the cases it gets wrong — the feedback it reflects on
+is not a percentage but "you called `бедер` a fragment; it is an ordinary
+noun". The score that counts is on a third of the controls it never sees, and a
+difference smaller than the model's own run-to-run variance is reported as
+noise rather than as a win.
+
+Two things this cost, both worth writing down. GEPA checks
+`adapter.propose_new_texts is not None` rather than for its existence, so
+omitting the attribute makes every reflection raise, get caught, and report
+"did not propose a new candidate" — the optimiser then runs to completion
+having done nothing, and returns a "+12%" that is entirely sampling noise. And
+a 550B model is too slow to reflect with on a free tier; the reflection runs on
+a 120B one.
+
+None of it decides anything. `tools/regress.py` is still the gate, and the
+mechanical filters in `discover.py` already got 316 words at no cost in
+precision. What a model is for is the harder pool — the 4,363 candidates
+refused for being one letter from an entry, and the 59,228 whose paradigm
+evidence is thin — where the answer is a judgement rather than a rule.
 
 ### A suffix voices its final stop too, not only an entry
 
