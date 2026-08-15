@@ -176,6 +176,29 @@ Of 8,629 rejected forms, 64.5% of the book-weight is valid Russian —
 and is certainly ours to fix. That second share was 38.2% when this started,
 which is the useful way to read it.
 
+### What a checker without context cannot do
+
+636 of the 20,000 misspellings are still accepted, and 267 of them are accepted
+because they are correct. `сейдімбекті` mistyped as `сейдімбекі` is `сейдімбек`
+plus a possessive; `бедердей` as `бедерде` is `бедер` plus a locative;
+`ордаңдап` as `ордаңдар` is `орда` plus `-ңдар`. Each is a legal walk over a
+stem in dozens of the 3,860 editions, and the only thing wrong with it is that
+the writer meant a different word. Nothing in a morphological recogniser can
+see that, and refusing them would mean refusing the forms themselves.
+
+So the ≥99% precision in the target above is not reachable by morphology. The
+ceiling for this design is around **98.7%** — everything else fixed — and
+closing the last point needs something the model does not have: how common a
+form is, or what is on either side of it. That is a different program, and it
+is worth knowing before spending more effort on this one.
+
+Of what remains below the ceiling, the largest single lever measured is
+derivation depth, and it is smaller than it looks. Among accepted
+misspellings, 33 need two derivations or more against 11 real words, and 3 need
+three against none — so the walk is capped at two. Capping at one catches 27
+and costs 17, including `ыждаһаттылықпен` and `мүмкінділігі`: `-лы` plus
+`-лық` is ordinary Kazakh, and refusing it to catch a typo is the wrong trade.
+
 ### 54,792 entries were holding nothing up
 
 A wordlist assembled from three sources carries entries none of them should

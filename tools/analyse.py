@@ -32,6 +32,14 @@ from template import Template, load  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 MAX_SLOTS = 6
 
+# How many stem-deriving suffixes one walk may use. Kazakh stacks derivation —
+# `дос-тық-тың` is ordinary — but not without limit, and a walk that reaches for
+# a third is usually spelling a misspelling: among the accepted misspellings in
+# the harness, 33 need two derivations or more against 11 real words, and 3 need
+# three against none.
+MAX_DERIVATIONS = 2
+DERIVING = {"sozjasam", "etis_jasam"}
+
 
 def read_lexicon(path: Path) -> dict[str, frozenset[str]]:
     """form -> the features it carries, for `requires` to test against."""
@@ -157,6 +165,7 @@ class Analyser:
         self.lexicon = lexicon
         self.overrides = overrides or {}
         self.elision = elision or {}
+        self.max_derivations = MAX_DERIVATIONS
         self.max_morpheme = max(len(m) for m in tpl.by_morpheme)
 
     def analyse(self, word: str) -> list[list[str]]:
@@ -223,10 +232,13 @@ class Analyser:
         if rest[:1] in VOWELS:
             yield stem + "ь", rest
 
-    def _walk(self, surface: str, rest: str, track: str, prev, features):
+    def _walk(self, surface: str, rest: str, track: str, prev, features,
+              derivations: int = 0):
         """Sequences of slots spelling `rest`, attaching after `surface`."""
         if not rest:
             yield []
+            return
+        if derivations > self.max_derivations:
             return
         if prev is not None and len(rest) > self.max_morpheme * MAX_SLOTS:
             return
@@ -263,8 +275,9 @@ class Analyser:
                             slot.a_after):
                     continue
                 nxt = slot.restart or slot.track
-                for tail in self._walk(surface + written, rest[cut:],
-                                       nxt, slot, features):
+                for tail in self._walk(surface + written, rest[cut:], nxt,
+                                       slot, features,
+                                       derivations + (slot.id in DERIVING)):
                     yield [f"{slot.id}:{written}"] + tail
 
     def accepts(self, word: str) -> bool:
