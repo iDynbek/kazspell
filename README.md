@@ -89,9 +89,9 @@ it takes; nothing downstream works until it does.
 
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
-| catches misspellings | **96.5%** | 96.4% | 99.4% |
-| accepts real Kazakh | **96.0%** | 98.1% | 82.1% |
-| accepts the corpus as it stands | 86.9% | — | — |
+| catches misspellings | **96.3%** | 96.4% | 99.4% |
+| accepts real Kazakh | **96.4%** | 98.1% | 82.1% |
+| accepts the corpus as it stands | 87.4% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
 
@@ -280,7 +280,29 @@ timer — `tools/triage_cron.sh`, every three hours, 120 requests a run, 960 a
 day at the worst. Each run resumes from the checkpoint and stops when its
 slice is spent.
 
-Two things make that safe to leave alone. Failures are deferred rather than
+It answered 4,274 of them, and the answer to the question it was built for is
+no. Sorting its verdicts against the corpus:
+
+| | stems | words gained | misspellings leaked |
+|---|---|---|---|
+| paradigm evidence ≥ 6 alone | 1,042 | 254 | 36 |
+| the same, plus the model's `word` | 299 | 90 | 12 |
+
+The model removes 164 real words to avoid 24 leaks, which is the ratio of the
+pool it is filtering. It is not discriminating between them; it is sampling
+them. The signal that does the work is the mechanical one — a typo is written
+once in one shape, so a string the corpus inflects six ways over six types is a
+word with an unlucky neighbour, whatever it looks like. `discover.py` now lets
+that outweigh the near-entry test directly, and the 4,283 held-back candidates
+became 254 real words for 36 leaks without asking anyone.
+
+That is worth stating plainly, because the tooling was not free: it is the only
+thing built in this project that did not earn its place. What it is still good
+for is the part no filter can do — the lemma and the part of speech, which
+`data/triaged.tsv` carries for every candidate and which 43.6% of the lexicon
+still lacks.
+
+Two things make the timer safe to leave alone. Failures are deferred rather than
 lost: a batch that dies on a transient refusal, and any candidate the model
 simply does not mention, go into a queue that is retried in smaller batches
 once the main pass is over — a model that drops four candidates out of twelve

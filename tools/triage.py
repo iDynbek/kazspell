@@ -241,8 +241,8 @@ def record(log, done, model_id: str, chunk: list[str], got: dict,
 
 
 async def run(models: list[str], words: list[str], limiter: Limiter,
-              checkpoint: Path, size: int,
-              retries: int = 2) -> dict[str, dict[str, dict]]:
+              checkpoint: Path, size: int, retries: int = 2,
+              give_up: int = 4) -> dict[str, dict[str, dict]]:
     done = read_checkpoint(checkpoint)
     with checkpoint.open("a", encoding="utf-8") as log:
         for model_id in models:
@@ -253,6 +253,10 @@ async def run(models: list[str], words: list[str], limiter: Limiter,
             agent = build_agent(model_id)
             print(f"{model_id}: {len(todo):,} to do, "
                   f"{len(todo) // size + 1} requests", file=sys.stderr)
+            # A model that is refused upstream is refused for the whole run,
+            # and asking it four hundred more times spends the allowance that
+            # the model still answering needs.
+            failures = 0
             chunks = [todo[i:i + size] for i in range(0, len(todo), size)]
             stop, deferred = False, []
             for wave in range(0, len(chunks), limiter.slots._value or 1):
@@ -272,7 +276,9 @@ async def run(models: list[str], words: list[str], limiter: Limiter,
                         print(f"  deferred: {type(got).__name__} "
                               f"{str(got)[:90]}", file=sys.stderr)
                         deferred.extend(chunk)
+                        failures += 1
                         continue
+                    failures = 0
                     record(log, done, model_id, chunk, got, deferred)
                 log.flush()
                 seen = min((wave + len(group)) * size, len(todo))
@@ -280,6 +286,10 @@ async def run(models: list[str], words: list[str], limiter: Limiter,
                       f"{limiter.used} requests", end="\r", file=sys.stderr)
                 if stop:
                     return done
+                if failures >= give_up:
+                    print(f"  {model_id} has refused {failures} batches in a "
+                          f"row; leaving it for another day", file=sys.stderr)
+                    break
             print(file=sys.stderr)
 
             # The deferred pass. Everything the main pass could not get an
@@ -396,29 +406,39 @@ def main() -> int:
                   f"{right:,} really are ({right / max(len(kept), 1):.0%})")
         return 0
 
+    # Agreement is among the models that answered, not among the models that
+    # were asked. A free model that is rate-limited upstream all day answers
+    # nothing, and requiring its vote turned 4,274 perfectly good verdicts into
+    # 4,278 rows marked `disputed`. How many voices there were is a column, so
+    # a one-model verdict can be read as the weaker thing it is.
     rows = []
     for word in words:
-        verdicts = {m: done.get(m, {}).get(word, {}).get("verdict", "missing")
-                    for m in args.models}
-        answered = [v for v in verdicts.values() if v != "missing"]
-        agree = len(set(answered)) == 1 and len(answered) == len(args.models)
+        said = {m: done[m][word]["verdict"] for m in args.models
+                if word in done.get(m, {})}
+        if not said:
+            verdict = "unanswered"
+        elif len(set(said.values())) == 1:
+            verdict = next(iter(said.values()))
+        else:
+            verdict = "disputed"
         lemma = next((done[m][word]["lemma"] for m in args.models
                       if word in done.get(m, {}) and done[m][word]["lemma"]), "")
         pos = next((done[m][word]["pos"] for m in args.models
                     if word in done.get(m, {}) and done[m][word]["pos"]), "")
-        rows.append((word, answered[0] if agree else "disputed",
-                     lemma, pos, "/".join(verdicts[m] for m in args.models)))
+        rows.append((word, verdict, lemma, pos, str(len(said)),
+                     "/".join(f"{m.split('/')[-1]}={v}" for m, v in said.items())))
 
     args.output.write_text(
-        "# stem\tverdict\tlemma\tpos\tper-model — tools/triage.py\n"
-        "# `verdict` is what every model agreed on, or `disputed`.\n"
+        "# stem\tverdict\tlemma\tpos\tvoices\tper-model — tools/triage.py\n"
+        "# `verdict` is what every model that answered agreed on, or\n"
+        "# `disputed`. `voices` is how many answered: one is weaker than two.\n"
         "# Proposals. tools/regress.py decides whether they go in.\n"
         + "\n".join("\t".join(r) for r in rows) + "\n", encoding="utf-8")
 
-    counts = collections.Counter(r[1] for r in rows)
+    counts = collections.Counter((r[1], r[4]) for r in rows)
     print(f"\n{len(rows):,} candidates → {args.output}")
-    for verdict, n in counts.most_common():
-        print(f"  {verdict:<12}{n:>6,}")
+    for (verdict, voices), n in counts.most_common():
+        print(f"  {verdict:<12}{n:>6,}   on {voices} model(s)")
     return 0
 
 

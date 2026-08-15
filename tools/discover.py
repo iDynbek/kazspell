@@ -111,6 +111,8 @@ def main() -> int:
     ap.add_argument("--forms", type=int, default=3,
                     help="distinct attested types a candidate must appear in")
     ap.add_argument("--min-stem", type=int, default=3)
+    ap.add_argument("--strong", type=int, default=6,
+                    help="paradigm evidence that overrides the near-entry test")
     args = ap.parse_args()
 
     attested = read_attested(args.attested)
@@ -144,6 +146,12 @@ def main() -> int:
     known = an.lexicon
     # Delete-one variants of every entry, so a candidate can be tested against
     # the whole lexicon at once instead of against each of its 128,769 words.
+    #
+    # Being one letter from an entry is evidence of a misspelling, not proof of
+    # one, and enough of a paradigm outweighs it: a typo is written once in one
+    # shape, so a string the corpus inflects six different ways over six
+    # different types is a word with an unlucky neighbour. Admitting those is
+    # worth 254 real words against 36 misspellings let through.
     index = set(known)
     for entry in known:
         index |= deletions(entry)
@@ -167,7 +175,8 @@ def main() -> int:
             if hit:
                 refused["a Russian-keyboard spelling of an entry"] += 1
                 continue
-        if near(stem, index):
+        if near(stem, index) and not (len(sigs) >= args.strong
+                                      and len(forms[stem]) >= args.strong):
             # Not discarded. A candidate one letter from an entry is usually
             # that entry misspelt, which is why it does not go in — but some
             # are ordinary words that happen to have a near neighbour, and
