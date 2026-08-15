@@ -70,6 +70,8 @@ it takes; nothing downstream works until it does.
                                   corpus is not Kazakh
     tools/harmony_overrides.py    which entries take the column their spelling
                                   does not predict, read off the books
+    tools/tracks.py               which track an entry with no part of speech
+                                  belongs on, read off the books
     tools/discover.py             stems the books inflect that no source
                                   vouched for, as candidates to be read
     tools/triage.py               ask a model which candidates are words, and
@@ -89,9 +91,9 @@ it takes; nothing downstream works until it does.
 
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
-| catches misspellings | **96.3%** | 96.4% | 99.4% |
-| accepts real Kazakh | **96.4%** | 98.1% | 82.1% |
-| accepts the corpus as it stands | 87.4% | — | — |
+| catches misspellings | **96.7%** | 96.4% | 99.4% |
+| accepts real Kazakh | **96.2%** | 98.1% | 82.1% |
+| accepts the corpus as it stands | 87.2% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
 
@@ -172,6 +174,27 @@ Of 8,629 rejected forms, 64.5% of the book-weight is valid Russian —
 `которую`, `последний`, `отказаться` — and 20.9% carries a Kazakh-only letter
 and is certainly ours to fix. That second share was 38.2% when this started,
 which is the useful way to read it.
+
+### The part of speech is worth 1.1 points, and the books know it
+
+An entry with no part of speech is opened on both tracks: it may take a plural
+and a past tense, a possessive and a converb. That is the honest thing to do
+with a word nobody has classified, and 43.6% of the lexicon is in that state.
+Blanking the part of speech on the 56.4% that have one costs **1.1 points of
+precision**, which makes this the largest single thing left.
+
+Filling it in is a judgement rather than a lookup, so it looked like the one
+job here for a language model. It is not. Asked for the part of speech of 200
+entries apertium had filed by hand, a 550B model agreed on 60% — a third of its
+answers were an empty string — and a list of suffixes agrees on 96%, because
+the question is not really *what kind of word is this*. It is *does the corpus
+write this with `-ды` and `-ған`, or with `-ның` and `-лар`*, and no case
+suffix is verbal and no tense suffix is nominal.
+
+`tools/tracks.py` places 15,932 of the 56,127 unlabelled entries that way and
+says nothing about the other 40,195, which the books do not inflect either way.
+It catches 81 misspellings and costs 63 real words, and it is the only change
+in this project whose point was precision: 96.3% → 96.7%.
 
 ### Coverage is a vocabulary problem now
 

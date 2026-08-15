@@ -72,11 +72,32 @@ def read_discovered(path: Path) -> dict[str, frozenset[str]]:
     return out
 
 
-def load_lexicon(lexicon: Path, discovered: Path) -> dict[str, frozenset[str]]:
-    """The vouched-for entries, plus the discovered ones that add something."""
+def read_tracks(path: Path) -> dict[str, str]:
+    """form -> the track the books put it on, for entries with no part of speech."""
+    if not path.exists():
+        return {}
+    out = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.startswith("#"):
+            form, track = line.split("\t")[:2]
+            out[form] = track
+    return out
+
+
+def load_lexicon(lexicon: Path, discovered: Path,
+                 tracks: Path | None = None) -> dict[str, frozenset[str]]:
+    """The vouched-for entries, plus the discovered ones that add something.
+
+    An entry with no part of speech is opened on both tracks, which is honest
+    and expensive. Where the corpus inflects it one way and not the other, that
+    settles it — see tools/tracks.py — and the other track closes.
+    """
     out = read_lexicon(lexicon)
     for form, features in read_discovered(discovered).items():
         out.setdefault(form, features)
+    for form, track in read_tracks(tracks or Path("/nonexistent")).items():
+        if form in out and not out[form]:
+            out[form] = frozenset({track})
     return out
 
 
@@ -253,7 +274,8 @@ class Analyser:
 @functools.lru_cache(maxsize=1)
 def default() -> Analyser:
     return Analyser(load(), load_lexicon(ROOT / "data/lexicon.tsv",
-                                        ROOT / "data/discovered.tsv"),
+                                        ROOT / "data/discovered.tsv",
+                                        ROOT / "data/tracks.tsv"),
                     overrides=read_harmony(ROOT / "data/harmony.tsv"),
                     elision=read_elision(ROOT / "data/elision.tsv"))
 
@@ -268,7 +290,8 @@ def main() -> int:
     args = ap.parse_args()
 
     an = Analyser(load(), load_lexicon(args.lexicon,
-                                       ROOT / "data/discovered.tsv"),
+                                       ROOT / "data/discovered.tsv",
+                                       ROOT / "data/tracks.tsv"),
                   overrides=read_harmony(ROOT / "data/harmony.tsv"),
                   elision=read_elision(ROOT / "data/elision.tsv"))
     bad = 0

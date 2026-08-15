@@ -211,6 +211,36 @@ def controls(n: int, seed: int) -> dict[str, str]:
             | {w: "fragment" for w in bad[:n // 2]})
 
 
+def pos_controls(n: int, seed: int) -> dict[str, str]:
+    """Entries whose part of speech apertium filed by hand, as an answer key.
+
+    Only entries carrying a paradigm, because those are the ones a person
+    assigned rather than a label a dictionary happened to print, and only one
+    part of speech each, because an entry that is both a noun and a verb cannot
+    score an answer that names one of them.
+    """
+    rows = []
+    for line in (ROOT / "data/lexicon.tsv").read_text(encoding="utf-8").splitlines():
+        if line.startswith("#") or not line.strip():
+            continue
+        form, pos, paradigms = (line.split("\t") + ["", ""])[:3]
+        tags = [t for t in pos.split("+") if t and t != "?"]
+        if paradigms and len(tags) == 1 and len(form) > 2 and tags[0] != "np":
+            rows.append((form, tags[0]))
+    random.Random(seed).shuffle(rows)
+    return dict(rows[:n])
+
+
+def coarse(pos: str) -> str:
+    """Transitivity is a distinction the model is not asked to make."""
+    pos = (pos or "").strip().lower()
+    if pos.startswith("v"):
+        return "v"
+    return {"noun": "n", "adjective": "adj", "adverb": "adv", "verb": "v",
+            "numeral": "num", "pronoun": "pron", "postposition": "post",
+            "interjection": "interj", "abbreviation": "abbr"}.get(pos, pos)
+
+
 def read_checkpoint(path: Path) -> dict[str, dict[str, dict]]:
     out: dict[str, dict[str, dict]] = collections.defaultdict(dict)
     if path.exists():
@@ -348,6 +378,8 @@ def main() -> int:
     ap.add_argument("--limit", type=int, help="only the first N candidates")
     ap.add_argument("--calibrate", type=int, metavar="N",
                     help="score the models on N strings whose answer is known")
+    ap.add_argument("--calibrate-pos", type=int, metavar="N",
+                    help="score the part of speech against apertium's")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
@@ -355,7 +387,11 @@ def main() -> int:
     if not os.environ.get("OPENROUTER_API_KEY"):
         sys.exit("no OPENROUTER_API_KEY in the environment or in .env")
 
-    if args.calibrate:
+    if args.calibrate_pos:
+        truth = pos_controls(args.calibrate_pos, args.seed)
+        words = list(truth)
+        checkpoint = args.checkpoint.with_suffix(".pos.jsonl")
+    elif args.calibrate:
         truth = controls(args.calibrate, args.seed)
         words = list(truth)
         random.Random(args.seed).shuffle(words)
@@ -373,6 +409,27 @@ def main() -> int:
     done = asyncio.run(run(args.models, words, limiter, checkpoint,
                            args.batch, args.retries))
     print(f"{limiter.used} requests used", file=sys.stderr)
+
+    if args.calibrate_pos:
+        print(f"\npart of speech, against apertium's own, on {len(words):,} "
+              f"entries it filed by hand")
+        for model_id in args.models:
+            rows = done.get(model_id, {})
+            scored = [(truth[w], coarse(rows[w]["pos"]))
+                      for w in words if w in rows]
+            if not scored:
+                print(f"  {model_id:<44} no answers")
+                continue
+            right = sum(1 for want, got in scored if coarse(want) == got)
+            print(f"  {model_id}")
+            print(f"    {right:,} of {len(scored):,} agree "
+                  f"({right / len(scored):.0%})")
+            missed = collections.Counter(
+                f"{coarse(want)} called {got or 'nothing'}"
+                for want, got in scored if coarse(want) != got)
+            for what, n in missed.most_common(6):
+                print(f"      {n:>4}  {what}")
+        return 0
 
     if truth:
         print(f"\ncalibration on {len(words):,} strings whose answer is known")
