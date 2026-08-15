@@ -72,6 +72,7 @@ it takes; nothing downstream works until it does.
                                   does not predict, read off the books
     tools/tracks.py               which track an entry with no part of speech
                                   belongs on, read off the books
+    tools/prune.py                entries in no book that hold nothing up
     tools/discover.py             stems the books inflect that no source
                                   vouched for, as candidates to be read
     tools/triage.py               ask a model which candidates are words, and
@@ -91,7 +92,7 @@ it takes; nothing downstream works until it does.
 
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
-| catches misspellings | **96.7%** | 96.4% | 99.4% |
+| catches misspellings | **96.8%** | 96.4% | 99.4% |
 | accepts real Kazakh | **96.2%** | 98.1% | 82.1% |
 | accepts the corpus as it stands | 87.2% | — | — |
 
@@ -174,6 +175,28 @@ Of 8,629 rejected forms, 64.5% of the book-weight is valid Russian —
 `которую`, `последний`, `отказаться` — and 20.9% carries a Kazakh-only letter
 and is certainly ours to fix. That second share was 38.2% when this started,
 which is the useful way to read it.
+
+### 54,792 entries were holding nothing up
+
+A wordlist assembled from three sources carries entries none of them should
+have offered: acronyms filed as words, headwords that are really inflected
+forms, scanning damage that survived into print. They are not free, because
+every entry is a stem, and every stem is another way for a misspelling of a
+long word to land on something buildable.
+
+Which ones are wrong cannot be decided by looking at them — the ones the leaks
+land on are mostly real words that happen to be short. What can be decided is
+whether an entry is doing anything: 66,682 appear in none of the 3,860
+editions, and of those, 54,792 are also the stem of no attested form. Nothing
+is lost by removing those, and one more stem stops being available to a typo.
+
+Both halves of the test are needed. `ушық` appears in no book either, and
+`ушығып` is in 132 of them. So is undoing the alternations before asking:
+`қаңырығы` is built on the surface `қаңырығ` and the entry is `қаңырық`, and
+the first version of this removed both.
+
+The lexicon goes from 128,769 entries to 73,977 — 43% of it — for **27
+misspellings caught, no real word lost and nothing leaked**.
 
 ### The part of speech is worth 1.1 points, and the books know it
 
@@ -391,11 +414,13 @@ correct refusals: `елімні` against `елімді` is 4 books against 407, 
 against `миді` 150 against 2, and `күйгенімден` against `күйгенімнен` 4 against
 34, which is the `-нен` after a possessive that this session put in.
 
-Of the 44 leaks, 29 rest on a lexicon entry of three letters or fewer — `аб`,
-`аи`, `аль`, `хаг`, `қм`, `ст`, `өме` — which are not Kazakh words. The new
-grammar did not become wrong; it gave the junk already in the wordlist more
-ways to combine. That is a lexicon problem, and it is now the thing between
-96.6% precision and the ≥99% target.
+Of the 44 leaks, 29 rest on a lexicon entry of three letters or fewer. It is
+tempting to read that as junk in the wordlist, and this file said so for
+several commits. It is mostly wrong: `ем` is in 1,791 of the 3,860 editions,
+`өре` in 421, `иін` in 378, `ан` in 433. They are ordinary Kazakh words, and a
+short real word catching a corruption of a long one is a property of the
+language rather than a defect in the list. What *is* a defect is the entry that
+appears in no book at all — see below.
 
 ### The template is the specification, not a table in a script
 
