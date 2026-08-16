@@ -55,14 +55,25 @@ def evidence(entry: str, attested: dict[str, int]) -> tuple[int, int]:
             sum(attested.get(entry + s, 0) for s in NOMINAL))
 
 
-def unlabelled(path: Path) -> list[str]:
+def unlabelled(lexicon: Path, discovered: Path | None = None) -> list[str]:
+    """Every entry with nothing said about its part of speech.
+
+    The discovered stems are all of them. Nobody vouched for those, so they
+    carry no features at all, so both tracks are open on every one — which is
+    how `сейдімбек`, a personal name the corpus argued for, came to take a
+    causative and spell `сейдімбекіт`.
+    """
     out = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in lexicon.read_text(encoding="utf-8").splitlines():
         if line.startswith("#") or not line.strip():
             continue
         form, pos = (line.split("\t") + [""])[:2]
         if not [t for t in pos.split("+") if t and t != "?"]:
             out.append(form)
+    if discovered and discovered.exists():
+        for line in discovered.read_text(encoding="utf-8").splitlines():
+            if line.strip() and not line.startswith("#"):
+                out.append(line.split("\t")[0])
     return out
 
 
@@ -71,6 +82,8 @@ def main() -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lexicon", type=Path, default=ROOT / "data/lexicon.tsv")
     ap.add_argument("--attested", type=Path, default=ROOT / "data/attested.tsv.gz")
+    ap.add_argument("--discovered", type=Path,
+                    default=ROOT / "data/discovered.tsv")
     ap.add_argument("-o", "--output", type=Path, default=ROOT / "data/tracks.tsv")
     ap.add_argument("--min-books", type=int, default=2,
                     help="ignore an entry with less evidence than this")
@@ -79,7 +92,7 @@ def main() -> int:
     args = ap.parse_args()
 
     attested = read_attested(args.attested)
-    entries = unlabelled(args.lexicon)
+    entries = unlabelled(args.lexicon, args.discovered)
 
     rows, thin = [], 0
     for entry in entries:
