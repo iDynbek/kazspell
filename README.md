@@ -73,6 +73,9 @@ it takes; nothing downstream works until it does.
     tools/tracks.py               which track an entry with no part of speech
                                   belongs on, read off the books
     tools/prune.py                entries in no book that hold nothing up
+    tools/oracle.py               every form apertium builds for a lemma
+                                  against every form this builds, with the
+                                  books deciding who is wrong
     tools/discover.py             stems the books inflect that no source
                                   vouched for, as candidates to be read
     tools/triage.py               ask a model which candidates are words, and
@@ -93,7 +96,7 @@ it takes; nothing downstream works until it does.
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
 | catches misspellings | **96.9%** | 96.4% | 99.4% |
-| accepts real Kazakh | **96.2%** | 98.1% | 82.1% |
+| accepts real Kazakh | **96.3%** | 98.1% | 82.1% |
 | accepts the corpus as it stands | 87.2% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
@@ -175,6 +178,45 @@ Of 8,629 rejected forms, 64.5% of the book-weight is valid Russian —
 `которую`, `последний`, `отказаться` — and 20.9% carries a Kazakh-only letter
 and is certainly ours to fix. That second share was 38.2% when this started,
 which is the useful way to read it.
+
+### apertium can generate, which is worth more than a second opinion
+
+`check_template.py` compares the two grammars as inventories — which suffixes
+each knows about. That misses everything about how they combine. apertium-kaz
+also ships its transducer *expanded*: one lemma of each part of speech taken
+through every paradigm it has, 13,051 forms with no clitic or copula, each with
+the analysis it was generated from. That is the only source here that can say
+what is **missing** rather than what is wrong, and it takes no judgement to
+read.
+
+It found 503 forms this recogniser refused. Four families, and the corpus
+confirmed three:
+
+- **The қалау рай derives a nominal and then takes a possessive.** `көргісі
+  келеді` is the construction, in 530 of the 3,860 editions, `айтқысы` 526,
+  `барғысы` 322, `барғым` 205. It was filed with the moods that do not derive
+  anything, so every verb-only stem lost it; `айрылғысы` was in the miss list
+  for weeks.
+- **The `-н-` cases follow `-дікі`, not only a possessive.** `менікін` 54
+  books, `менікінен` 50, `менікіне` 19.
+- **`-ыпты` is how Kazakh writes hearsay** — `кетіпті` 1,637 books, `алыпты`
+  1,344, `келіпті` 1,215 — and it was reachable only when the converb happened
+  to be a lexicon entry in its own right. It is the ordinary converb plus a
+  third person `-ты`, which жіктік was missing.
+- **`-ша/-ше` was at order 10**, below the inflection, the same mistake `-ғы`
+  and `-дай` were in: `өзінше` 1,255 books, `менімше` 142, `айтқанынша` 31.
+
+The fourth was the polite imperative `-ың`, and it did not survive contact with
+`regress.py`: five real words gained for eight misspellings let through, most
+of them because `барың` is already reachable as a possessive. Dropped.
+
+**And the oracle is not the authority.** It generates `жақсылардікінге`, which
+Kazakh does not write — `менікінге` is in none of the 3,860 editions against 19
+for `менікіне`. So every miss is looked up in the books before it counts as a
+gap, and `tools/oracle.py` reports the two separately: 5 forms we refuse that
+the books do write, and 324 that nobody writes.
+
+We now build 97.5% of what apertium generates, from 96.1%.
 
 ### What a checker without context cannot do
 

@@ -134,7 +134,7 @@ gloss = "dative after a possessive"
 track = "n"
 order = 40
 group = "septik"
-after = ["tauelik"]
+after = ["tauelik", "tauelik_of"]
 morphemes = ["на", "не", "а", "е"]
 
 [[slot]]
@@ -154,7 +154,7 @@ gloss = "accusative after a possessive"
 track = "n"
 order = 40
 group = "septik"
-after = ["tauelik"]
+after = ["tauelik", "tauelik_of"]
 morphemes = ["н"]
 a_after = ["vowel"]   # қаласын, үйін — the possessive leaves a vowel
 
@@ -174,7 +174,7 @@ gloss = "locative after a possessive"
 track = "n"
 order = 40
 group = "septik"
-after = ["tauelik"]
+after = ["tauelik", "tauelik_of"]
 morphemes = ["нда", "нде"]
 a_after = ["vowel"]   # қаласында — likewise
 
@@ -198,7 +198,7 @@ gloss = "ablative after a possessive"
 track = "n"
 order = 40
 group = "septik"
-after = ["tauelik"]
+after = ["tauelik", "tauelik_of"]
 morphemes = ["нан", "нен"]
 a_after = ["vowel"]   # қаласынан — likewise
 
@@ -255,6 +255,19 @@ restart = "n"
 after = ["tauelik"]
 morphemes = ["ндай", "ндей"]
 a_after = ["vowel"]
+
+# `-ша/-ше` is the other suffix that was filed at order 10 and needed to be
+# above the inflection: `өзінше` is in 1,255 books, `менімше` 142,
+# `айтқанынша` 31, and every one of them is a possessive with `-ше` on top.
+
+[[slot]]
+id = "salystyru_sha"
+name = "-ша/-ше жұрнағы"
+gloss = "in the manner of — өзінше, менімше"
+track = "n"
+order = 44
+restart = "n"
+morphemes = ["ша", "ше"]
 
 [[slot]]
 id = "tauelik_of"
@@ -427,7 +440,6 @@ morphemes = [
   # `байқайық` 88. `-алық/-елік` is the same person again — `көтерелік` 45,
   # `қоштасалық` 24 — and apertium-kaz spells it out as well.
   "йық", "йік", "алық", "елік",
-  "ғы", "гі", "қы", "кі",
   "ыңыз", "іңіз", "ыңдар", "іңдер", "ңыз", "ңіз", "ңдар", "ңдер",
   "шы", "ші", "ңызшы", "ңізші",
 ]
@@ -437,6 +449,21 @@ morphemes = [
 # missing entirely, so the past and the conditional had no person at all
 # outside the third: `бардық` is in 497 books, `келдік` in 1,147, `келсек` in
 # 855, and none of them could be built.
+
+# The қалау рай derives a nominal and then takes a possessive, which is the
+# whole construction: `барғысы келеді`, `көргім келді`. It cannot sit with the
+# other moods, because they do not — `барсынсы` is nothing. `көргісі` is in 530
+# of 3,860 books, `айтқысы` 526, `барғысы` 322, `барғым` 205.
+
+[[slot]]
+id = "rai_qalau"
+name = "қалау рай"
+gloss = "the -ғы of барғысы келеді — derives a nominal, so a possessive follows"
+track = "v"
+order = 30
+group = "finiteness"
+restart = "n"
+morphemes = ["ғы", "гі", "қы", "кі"]
 
 [[slot]]
 id = "jiktik_otken"
@@ -481,7 +508,11 @@ morphemes = [
   "сың", "сің", "сыз", "сіз",
   "мыз", "міз", "быз", "біз", "пыз", "піз",
   "сыңдар", "сіңдер", "сыздар", "сіздер",
-  "ды", "ді",
+  # Third person after the көсемше, which is how Kazakh writes hearsay:
+  # `кетіпті` in 1,637 of 3,860 books, `алыпты` 1,344, `келіпті` 1,215.
+  # apertium calls it ifi_evid and it was reachable here only when the
+  # converb happened to be a lexicon entry of its own.
+  "ды", "ді", "ты", "ті",
 ]
 
 # `-шы/-ші` softens an order into a request, and it comes after the person
