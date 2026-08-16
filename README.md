@@ -92,7 +92,7 @@ it takes; nothing downstream works until it does.
 
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
-| catches misspellings | **96.8%** | 96.4% | 99.4% |
+| catches misspellings | **96.9%** | 96.4% | 99.4% |
 | accepts real Kazakh | **96.2%** | 98.1% | 82.1% |
 | accepts the corpus as it stands | 87.2% | — | — |
 
@@ -178,12 +178,13 @@ which is the useful way to read it.
 
 ### What a checker without context cannot do
 
-636 of the 20,000 misspellings are still accepted, and 267 of them are accepted
-because they are correct. `сейдімбекті` mistyped as `сейдімбекі` is `сейдімбек`
-plus a possessive; `бедердей` as `бедерде` is `бедер` plus a locative;
-`ордаңдап` as `ордаңдар` is `орда` plus `-ңдар`. Each is a legal walk over a
-stem in dozens of the 3,860 editions, and the only thing wrong with it is that
-the writer meant a different word. Nothing in a morphological recogniser can
+618 of the 20,000 misspellings are still accepted, and 263 of them are accepted
+because they are correct. `бедердей` mistyped as `бедерде` is `бедер` plus a
+locative; `ордаңдап` as `ордаңдар` is `орда` plus `-ңдар`; `салыңқылау` as
+`салыңқыла` is `салыңқы` plus `-ла`. Each is a legal walk over a stem in dozens
+of the 3,860 editions, and the only thing wrong with it is that the writer
+meant a different word. 238 of the 263 rest on ordinary classified vocabulary
+and only 17 on proper names, so this is not the names problem in disguise. Nothing in a morphological recogniser can
 see that, and refusing them would mean refusing the forms themselves.
 
 So the ≥99% precision in the target above is not reachable by morphology. The

@@ -15,6 +15,11 @@ question is not really "what kind of word is this". It is "does the corpus
 write this with `-ды` and `-ған`, or with `-ның` and `-лар`", and the corpus
 can be asked directly.
 
+The discovered stems need this most, because nobody classified any of them.
+They carry no features at all, so both tracks are open on every one — which is
+how `сейдімбек`, a personal name the corpus argued for, came to take a
+causative and spell `сейдімбекіт`.
+
 Nothing is claimed where the evidence is thin. An entry the books do not
 inflect either way keeps both tracks and its silence.
 
