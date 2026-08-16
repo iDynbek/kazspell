@@ -58,6 +58,22 @@ def read_expansion(path: Path) -> list[tuple[str, str]]:
     return out
 
 
+def read_tagged(path: Path) -> list[tuple[str, str]]:
+    """(surface, analysis) from apertium's hand-tagged running text.
+
+    A different question from the expansion. That one asks what the grammar can
+    build; this asks what a person actually wrote, with someone's analysis of
+    every token attached. It is the only recall measurement here that is not
+    taken on our own corpus, and it is a cleaner one — no Russian, no scanning
+    damage, every token a word by construction.
+    """
+    out = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        for match in re.finditer(r"\^([^/]+)/([^$]*)\$", line):
+            out.append((match.group(1).lower(), match.group(2)))
+    return out
+
+
 def read_attested(path: Path) -> dict[str, int]:
     with gzip.open(path, "rt", encoding="utf-8") as fh:
         return {w: int(n) for w, n in
@@ -69,10 +85,33 @@ def main() -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--expansion", type=Path,
                     default=ROOT.parent / "apertium-kaz/expanded/current-state.txt.gz")
+    ap.add_argument("--tagged", type=Path,
+                    default=ROOT.parent / "apertium-kaz/corpus/kaz.tagged")
     ap.add_argument("--attested", type=Path, default=ROOT / "data/attested.tsv.gz")
     ap.add_argument("-o", "--output", type=Path, default=ROOT / "data/oracle_gaps.tsv")
     ap.add_argument("--show", type=int, default=12)
     args = ap.parse_args()
+
+    if args.tagged.exists():
+        tagged = [(s, a) for s, a in read_tagged(args.tagged)
+                  if CYRILLIC.match(s)]
+        an_t = default()
+        types: dict[str, str] = {}
+        for surface, analysis in tagged:
+            types.setdefault(surface, analysis)
+        tok = sum(1 for s, _a in tagged if an_t.accepts(s))
+        typ = sum(1 for s in types if an_t.accepts(s))
+        refused = [(s, a) for s, a in sorted(types.items())
+                   if not an_t.accepts(s)]
+        names = [p for p in refused if "<np>" in p[1]]
+        print(f"apertium's hand-tagged running text, {len(tagged):,} tokens")
+        print(f"  by token {tok / len(tagged):>7.1%}   by type "
+              f"{typ / len(types):>7.1%}   ({len(types):,} types)")
+        print(f"  {len(refused)} refused, {len(names)} of them proper names")
+        for surface, analysis in refused:
+            if "<np>" not in analysis:
+                print(f"    {surface:<22}{analysis}")
+        print()
 
     if not args.expansion.exists():
         sys.exit(f"no expansion at {args.expansion}; it ships in apertium-kaz "

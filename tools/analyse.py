@@ -145,14 +145,29 @@ def read_harmony(path: Path) -> dict[str, str]:
     return out
 
 
+VERBAL_POS = {"v", "v-trans", "v-intrans", "v-aux"}
+NOMINAL_POS = {"n", "np", "adj", "adv", "num", "pron", "det", "post", "interj",
+               # A conjunction and an abbreviation are not verbs, and naming
+               # neither list left them on no track at all: `не` is in 3,554 of
+               # the 3,860 editions, `және` 2,740, `түгіл` 1,304, and not one
+               # of them could be analysed, bare or inflected. An entry that
+               # names a track it does not have is worse than one that names
+               # none, so the fallback below is open rather than closed.
+               "conj", "abbr"}
+
+
 def tracks_of(features: frozenset[str]) -> tuple[str, ...]:
-    """Which template tracks an entry can start on."""
-    verbal = {"v", "v-trans", "v-intrans", "v-aux"}
-    nominal = {"n", "np", "adj", "adv", "num", "pron", "det", "post", "interj"}
+    """Which template tracks an entry can start on.
+
+    An entry saying nothing gets both, because nothing has been claimed about
+    it. An entry whose part of speech nobody here has heard of gets both for
+    the same reason — silently getting neither is how 90 entries carrying
+    17,504 books of weight became unbuildable.
+    """
     out = []
-    if features & nominal or not features:
+    if features & NOMINAL_POS or not features & (NOMINAL_POS | VERBAL_POS):
         out.append("n")
-    if features & verbal or not features:
+    if features & VERBAL_POS or not features & (NOMINAL_POS | VERBAL_POS):
         out.append("v")
     return tuple(out)
 

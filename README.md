@@ -86,7 +86,7 @@ it takes; nothing downstream works until it does.
     tools/regress.py              which words changed their verdict since last
                                   time, so a score moving can be checked rather
                                   than believed
-    tests/test_template.py        37 cases: real forms the template must build,
+    tests/test_template.py        53 cases: real forms the template must build,
                                   real errors it must refuse
     tests/test_phonology.py       157 cases: which allomorph each slot takes
                                   on a given stem, decided by the books
@@ -218,6 +218,35 @@ the books do write, and 324 that nobody writes.
 
 We now build 97.6% of what apertium generates, from 96.1%, and 2 of its forms
 that the books also write remain refused.
+
+### A second corpus, and the bug it found
+
+apertium also ships 9,762 tokens of hand-tagged running text. That is a
+different question from the expansion — not what the grammar can build but what
+a person actually wrote, with someone's analysis of every token attached — and
+it is the only recall measurement here not taken on our own corpus. It is a
+cleaner one, too: no Russian, no scanning damage, every token a word by
+construction.
+
+    by token   99.3%      by type   98.8%      3,820 types
+    46 refused, 34 of them proper names
+
+It found something the book corpus never surfaced. `tracks_of` listed the parts
+of speech that open the nominal track and the verbal one, and `conj` and `abbr`
+were in neither — so an entry tagged with either got **no track at all** and
+could not be analysed even bare. `не` is in 3,554 of the 3,860 editions,
+`және` 2,740, `түгіл` 1,304, `яки` 752, and not one of them was a word. 90
+entries, 17,504 books of weight, silently dead.
+
+The fix is one line of sets, but the shape of the bug is worth keeping: it fails
+*closed*, and a list that fails closed is a list that has to be complete. An
+unknown part of speech now opens both tracks, which is what an entry saying
+nothing already got, and `tests/test_template.py` checks that every tag the
+lexicon actually uses lands somewhere.
+
+The same corpus asked for the comparative, which was missing altogether:
+`көбірек` 1,279 books, `азырақ` 861, `тереңірек` 484, `жақсырақ` 345, and
+`-лау/-леу` for the same degree — `үлкендеу` 187.
 
 ### One slot, two alternations that disagree
 

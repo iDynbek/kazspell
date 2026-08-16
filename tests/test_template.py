@@ -14,7 +14,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 
+from analyse import tracks_of  # noqa: E402
 from template import load  # noqa: E402
+
+# Every part of speech that appears in data/lexicon.tsv.
+EVERY_POS = ["n", "np", "adj", "adv", "num", "pron", "det", "post", "interj",
+             "conj", "abbr", "v", "v-trans", "v-intrans", "v-aux"]
 
 # (word, starting track, slot sequence) — sequences the template must permit.
 LEGAL = [
@@ -134,14 +139,25 @@ def main() -> int:
                            frozenset({"v-trans", "v-intrans"})) is None:
                 failures.append(f"{slot.id}: {morpheme!r} is unreachable")
 
-    total = len(LEGAL) + len(ILLEGAL) + len(FEATURES)
+    # Every part of speech the lexicon uses has to put an entry on some track.
+    # Naming neither list left `не`, `және` and `түгіл` — 3,554, 2,740 and
+    # 1,304 of the 3,860 editions — on no track at all, unbuildable even bare.
+    for pos in EVERY_POS:
+        if not tracks_of(frozenset({pos})):
+            failures.append(f"an entry tagged {pos!r} is put on no track")
+    if tracks_of(frozenset({"a-tag-nobody-has-added-yet"})) != ("n", "v"):
+        failures.append("an unknown part of speech should open both tracks "
+                        "rather than close both")
+
+    total = len(LEGAL) + len(ILLEGAL) + len(FEATURES) + len(EVERY_POS) + 1
     if failures:
         for f in failures:
             print(f"  FAIL  {f}")
         print(f"\n{len(failures)} failures over {total} cases")
         return 1
     print(f"{total} cases pass: {len(LEGAL)} legal forms, {len(ILLEGAL)} refused, "
-          f"{len(FEATURES)} feature-gated, every morpheme reachable")
+          f"{len(FEATURES)} feature-gated, {len(EVERY_POS) + 1} parts of "
+          f"speech placed, every morpheme reachable")
     return 0
 
 

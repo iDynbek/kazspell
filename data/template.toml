@@ -260,6 +260,26 @@ a_after = ["vowel"]
 # above the inflection: `өзінше` is in 1,255 books, `менімше` 142,
 # `айтқанынша` 31, and every one of them is a possessive with `-ше` on top.
 
+# Салыстырмалы шырай, which was missing altogether. `көбірек` is in 1,279 of
+# the 3,860 editions, `азырақ` 861, `тереңірек` 484, `жақынырақ` 469,
+# `жақсырақ` 345, `ұзағырақ` 274, `кішірек` 262. `-лау/-леу` is the same
+# degree by another suffix: `үлкендеу` 187, `кішілеу` 157.
+#
+# It sits above the inflection like the other шырай suffixes, and derives a
+# new nominal — `көбірегі`, `жақсырағын`.
+
+[[slot]]
+id = "shyrai"
+name = "салыстырмалы шырай"
+gloss = "the comparative: көбірек, жақсырақ, үлкендеу"
+track = "n"
+order = 44
+restart = "n"
+morphemes = [
+  "рақ", "рек", "ырақ", "ірек",
+  "лау", "леу", "дау", "деу", "тау", "теу",
+]
+
 [[slot]]
 id = "salystyru_sha"
 name = "-ша/-ше жұрнағы"
