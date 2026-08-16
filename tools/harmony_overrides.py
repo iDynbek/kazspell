@@ -12,6 +12,21 @@ asking which spelling of `<entry> + -ға/-ге` is attested, over several suffi
 at once, asks the language directly. An entry is recorded only when the answer
 disagrees with what the letters predict and the evidence is not thin.
 
+Counting probes instead of weighing them was tried, and so was doing both. The
+idea is sound — a homograph can only cast one vote, where it can carry a whole
+column's weight — but once the headword exclusion is in, weight already gets
+those cases right and the probe count adds nothing:
+
+    weight alone                 76.8% of types, 19,379 misspellings caught
+    both, and they must agree    76.7%, 19,377 — it withholds 87 correct answers
+    votes only where weight is
+    silent                       identical; it places nothing extra, because a
+                                 stem too rare to weigh is too rare to vote
+
+Weight alone it is. The reason the two never disagree usefully is that they are
+the same books counted twice, and the thing that made them differ was one form
+being a different word — which is what the headword test removes.
+
     python tools/harmony_overrides.py
 """
 
