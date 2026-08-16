@@ -112,6 +112,19 @@ CASES = [
     ("esimshe", "оқы", "ушы", "уші", "оқушы"),
     ("esimshe", "кел", "уші", "ушы", "келуші"),
 
+    # The first person singular and plural alternate on the same м/б/п and
+    # divide the finals differently: after a nasal the singular is `-мын` and
+    # the plural is `-быз`. `барғанмын` 108 books against no `барғанбын`,
+    # `барғанбыз` 84 and `адамбыз` 223 against no `-мыз` at all.
+    ("jiktik_n", "барған", "мын", "бын", "барғанмын"),
+    ("jiktik_n", "барған", "быз", "мыз", "барғанбыз"),
+    ("jiktik_n", "адам",   "быз", "мыз", "адамбыз"),
+    ("jiktik_n", "келген", "біз", "міз", "келгенбіз"),
+    # After a liquid both are the м series, which is what makes this a
+    # per-member fact rather than a slot-wide one.
+    ("jiktik_n", "ел",     "міз", "біз", "елміз"),
+    ("jiktik_n", "мұғалім", "мін", "бін", "мұғаліммін"),
+
     # A soft sign is not a segment: it is the `л` of `мораль` that picks `-ға`.
     ("barys", "мораль", "ға", "қа", "моральға"),
     ("ilik",  "февраль", "дың", "тың", "февральдың"),
@@ -205,7 +218,8 @@ def main() -> int:
 
     def shapes(slot_id: str, stem: str) -> list[str]:
         slot = tpl.by_id[slot_id]
-        return realise(stem, slot.morphemes, None, slot.a_after)
+        return realise(stem, slot.morphemes, None, slot.a_after,
+                       slot.a_after_for)
 
     for slot_id, stem, want, refuse, word in CASES + PERSONAL:
         got = shapes(slot_id, stem)

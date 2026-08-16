@@ -272,7 +272,7 @@ class Analyser:
                 # suffix is on, the surface has vowels of its own.
                 if not fits(surface, morpheme, slot.morphemes,
                             self.overrides if prev is None else None,
-                            slot.a_after):
+                            slot.a_after, slot.a_after_for):
                     continue
                 nxt = slot.restart or slot.track
                 for tail in self._walk(surface + written, rest[cut:], nxt,

@@ -88,7 +88,7 @@ it takes; nothing downstream works until it does.
                                   than believed
     tests/test_template.py        37 cases: real forms the template must build,
                                   real errors it must refuse
-    tests/test_phonology.py       145 cases: which allomorph each slot takes
+    tests/test_phonology.py       157 cases: which allomorph each slot takes
                                   on a given stem, decided by the books
 
 ### First measurement of the architecture
@@ -96,7 +96,7 @@ it takes; nothing downstream works until it does.
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
 | catches misspellings | **96.9%** | 96.4% | 99.4% |
-| accepts real Kazakh | **96.3%** | 98.1% | 82.1% |
+| accepts real Kazakh | **96.4%** | 98.1% | 82.1% |
 | accepts the corpus as it stands | 87.2% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
@@ -216,7 +216,31 @@ for `менікіне`. So every miss is looked up in the books before it counts
 gap, and `tools/oracle.py` reports the two separately: 5 forms we refuse that
 the books do write, and 324 that nobody writes.
 
-We now build 97.5% of what apertium generates, from 96.1%.
+We now build 97.6% of what apertium generates, from 96.1%, and 2 of its forms
+that the books also write remain refused.
+
+### One slot, two alternations that disagree
+
+The oracle also surfaced something `a_after` could not state. The first person
+singular and plural are the same м/б/п series, and after a nasal they part
+company: `барғанмын` is in 108 of the 3,860 editions and `барғанбын` in none,
+while `барғанбыз` is in 84, `адамбыз` 223, `жанбыз` 94 — and `барғанмыз`,
+`адаммыз`, `жанмыз` in none at all. After a liquid both take the м series:
+`елміз` 225.
+
+So `-мын` follows a nasal and `-мыз` does not, inside one slot. `a_after` was
+declared per slot, so it could say one or the other and not both, and it was
+saying the singular's answer for both. `a_after_for` says it per A-member:
+
+    a_after_for = [
+      { member = "мыз", after = ["vowel", "glide", "r", "liquid"] },
+      { member = "міз", after = ["vowel", "glide", "r", "liquid"] },
+    ]
+
+which is the third time this file has had to stop inferring an alternation and
+start declaring it — after the genitive against the accusative, and `-мыз`
+against `-сыз`. The lesson each time was the same: two morphemes that look
+alike are not evidence that they behave alike.
 
 ### What a checker without context cannot do
 

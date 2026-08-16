@@ -46,6 +46,10 @@ class Slot:
     # cannot say: `-ның` and `-ны` alternate identically and divide the finals
     # differently. See tools/phonology.py.
     a_after: tuple[str, ...] = ()
+    # And per A-member, for a slot whose own alternations disagree: `-мын` and
+    # `-мыз` are the same person on the same м/б/п, and only one of them
+    # follows a nasal.
+    a_after_for: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 @dataclass
@@ -103,6 +107,8 @@ def load(path: Path | None = None) -> Template:
         group=s.get("group"), requires=tuple(s.get("requires", ())),
         restart=s.get("restart"), after=tuple(s.get("after", ())),
         a_after=tuple(s.get("a_after", ())),
+        a_after_for=tuple((d["member"], tuple(d["after"]))
+                          for d in s.get("a_after_for", ())),
     ) for s in raw["slot"])
     problems = check(slots)
     if problems:
@@ -135,6 +141,17 @@ def check(slots: tuple[Slot, ...]) -> list[str]:
         for cls in slot.a_after:
             if cls not in phonology.CLASSES:
                 problems.append(f"{slot.id}: a_after names unknown class {cls!r}")
+        for member, classes in slot.a_after_for:
+            if member not in slot.morphemes:
+                problems.append(f"{slot.id}: a_after_for names {member!r}, "
+                                f"which is not one of its morphemes")
+            if member[:1] not in phonology.A_INITIALS:
+                problems.append(f"{slot.id}: a_after_for names {member!r}, "
+                                f"which is not an A-member")
+            for cls in classes:
+                if cls not in phonology.CLASSES:
+                    problems.append(f"{slot.id}: a_after_for {member!r} names "
+                                    f"unknown class {cls!r}")
         # Declaring what the A-member follows, in a slot that has no A-member,
         # is a statement about nothing and means the slot has been misread.
         if slot.a_after and not any(m[:1] in phonology.A_INITIALS

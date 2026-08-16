@@ -178,7 +178,9 @@ def _alternations(members: list[str]) -> list[list[str]]:
 
 @functools.lru_cache(maxsize=None)
 def series_finals(morphemes: tuple[str, ...],
-                  a_after: tuple[str, ...] = ()) -> dict[str, frozenset[str]]:
+                  a_after: tuple[str, ...] = (),
+                  a_after_for: tuple[tuple[str, tuple[str, ...]], ...] = (),
+                  ) -> dict[str, frozenset[str]]:
     """morpheme -> the stem-final letters it may follow.
 
     Morphemes differing only in their initial consonant are one alternation.
@@ -189,6 +191,14 @@ def series_finals(morphemes: tuple[str, ...],
     do.
     """
     declared = set().union(*(CLASSES[c] for c in a_after)) if a_after else None
+    # Per-member declarations, for a slot whose alternations do not agree with
+    # each other. `-мын` and `-мыз` are the first person singular and plural on
+    # the same м/б/п, and after a nasal they diverge: `барғанмын` is in 108 of
+    # the 3,860 books and `барғанбын` in none, while `барғанбыз` is in 84 and
+    # `барғанмыз` in none. One `a_after` for the slot cannot say both.
+    per_member = {m: set().union(*(CLASSES[c] for c in cls))
+                  for m, cls in a_after_for}
+    anything_declared = declared is not None or bool(per_member)
 
     families: dict[tuple[str, str | None], list[str]] = collections.defaultdict(list)
     for m in morphemes:
@@ -199,24 +209,27 @@ def series_finals(morphemes: tuple[str, ...],
         # suffix, and reading them as a series put `-қ` among the voiceless
         # finals — where `барды` cannot reach it, so `бардық` was not a word.
         # Where a single letter really does alternate the slot declares it.
-        if not m[1:] and declared is None:
+        if not m[1:] and not anything_declared:
             continue
         families[(m[1:], morpheme_harmony(m))].append(m)
 
     out: dict[str, frozenset[str]] = {}
     for members in (alt for family in families.values()
                     for alt in _alternations(family)):
+        initials = {m[0] for m in members}
+        a_initial = next((i for i in initials if i in A_INITIALS), None)
+        a_member = next((m for m in members if m[0] in A_INITIALS), None)
+        mine = per_member.get(a_member)
         # One member is not an alternation. `-сың` is the whole second person
         # and nothing in жіктік competes with it, so reading its `с` as the
         # A-member of a series confined it to vowel-final stems and took
         # `келмейсің` and `барғансың` out of the language. A slot that does
         # alternate on a single written member says so with `a_after`.
-        if len(members) == 1 and declared is None:
+        if len(members) == 1 and mine is None and declared is None:
             continue
-        initials = {m[0] for m in members}
-        a_initial = next((i for i in initials if i in A_INITIALS), None)
-        a_set = declared if declared is not None else (
-            _a_set(a_initial) if a_initial else None)
+        a_set = mine if mine is not None else (
+            declared if declared is not None else (
+                _a_set(a_initial) if a_initial else None))
         for m in members:
             first = m[0]
             if first in A_INITIALS:
@@ -238,8 +251,9 @@ def final(stem: str) -> str:
 
 
 def licensed(stem: str, morpheme: str, morphemes: tuple[str, ...],
-             a_after: tuple[str, ...] = ()) -> bool:
-    finals = series_finals(morphemes, a_after)
+             a_after: tuple[str, ...] = (),
+             a_after_for: tuple[tuple[str, tuple[str, ...]], ...] = ()) -> bool:
+    finals = series_finals(morphemes, a_after, a_after_for)
     if morpheme not in finals:
         return True
     last = final(stem)
@@ -273,7 +287,8 @@ def epenthetic(morphemes: tuple[str, ...]) -> frozenset[str]:
 
 def fits(stem: str, morpheme: str, slot_morphemes: tuple[str, ...],
          overrides: dict[str, str] | None = None,
-         a_after: tuple[str, ...] = ()) -> bool:
+         a_after: tuple[str, ...] = (),
+         a_after_for: tuple[tuple[str, tuple[str, ...]], ...] = ()) -> bool:
     """Whether `morpheme` is the shape this stem licenses for its slot.
 
     `overrides` carries stems whose harmony the spelling does not predict:
@@ -302,13 +317,15 @@ def fits(stem: str, morpheme: str, slot_morphemes: tuple[str, ...],
     if morpheme in epenthetic(slot_morphemes):
         return ends_vowel              # `бала-сы`, never `ат-сы`
 
-    return licensed(stem, morpheme, slot_morphemes, a_after)
+    return licensed(stem, morpheme, slot_morphemes, a_after, a_after_for)
 
 
 def realise(stem: str, slot_morphemes: tuple[str, ...],
             overrides: dict[str, str] | None = None,
-            a_after: tuple[str, ...] = ()) -> list[str]:
+            a_after: tuple[str, ...] = (),
+            a_after_for: tuple[tuple[str, tuple[str, ...]], ...] = ()) -> list[str]:
     """The shapes of this slot that the stem licenses, longest first."""
     return sorted((m for m in slot_morphemes
-                   if fits(stem, m, slot_morphemes, overrides, a_after)),
+                   if fits(stem, m, slot_morphemes, overrides, a_after,
+                           a_after_for)),
                   key=len, reverse=True)

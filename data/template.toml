@@ -291,6 +291,16 @@ morphemes = [
   "мыз", "міз", "быз", "біз", "пыз", "піз",
   "сыңдар", "сіңдер", "сыздар", "сіздер",
 ]
+# The first person singular and plural alternate on the same м/б/п and do not
+# divide the finals the same way. After a nasal the singular is `-мын` —
+# `барғанмын` 108 books, `барғанбын` none — and the plural is `-быз`:
+# `барғанбыз` 84, `адамбыз` 223, `жанбыз` 94, against no `-мыз` at all. After a
+# liquid both are the м series: `елміз` 225.
+a_after_for = [
+  { member = "мыз", after = ["vowel", "glide", "r", "liquid"] },
+  { member = "міз", after = ["vowel", "glide", "r", "liquid"] },
+]
+
 
 # ─── Verbal voice. The passive is the reason `requires` exists. ──────────────
 
@@ -514,6 +524,16 @@ morphemes = [
   # converb happened to be a lexicon entry of its own.
   "ды", "ді", "ты", "ті",
 ]
+# The first person singular and plural alternate on the same м/б/п and do not
+# divide the finals the same way. After a nasal the singular is `-мын` —
+# `барғанмын` 108 books, `барғанбын` none — and the plural is `-быз`:
+# `барғанбыз` 84, `адамбыз` 223, `жанбыз` 94, against no `-мыз` at all. After a
+# liquid both are the м series: `елміз` 225.
+a_after_for = [
+  { member = "мыз", after = ["vowel", "glide", "r", "liquid"] },
+  { member = "міз", after = ["vowel", "glide", "r", "liquid"] },
+]
+
 
 # `-шы/-ші` softens an order into a request, and it comes after the person
 # rather than before it: `барсаңшы` is бар-са-ң-шы, not бар-шы-са-ң. That is
