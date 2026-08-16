@@ -2,7 +2,6 @@
 # forms apertium-kaz generates that this recogniser refuses.
 # `books` is how many of the 3,860 editions write it: 0 means the
 # disagreement is probably apertium's rather than ours.
-шақырыңыздар	7	шақыр<v><tv><imp><p2><frm><pl>
 шақырың	5	шақыр<v><tv><imp><p2><frm><sg>
 жақсылардікінге	0	жақсы<adj><subst><pl><gen><subst><dat>
 жақсыларымдікінге	0	жақсы<adj><subst><pl><px1sg><gen><subst><dat>
@@ -195,7 +194,6 @@
 шақырмайтыныннікі	0	шақыр<v><tv><neg><gpr_impf><subst><px3sp><gen><subst><nom>
 шақырмақтарыннікі	0	шақыр<v><tv><ger_obs><pl><px3sp><gen><subst><nom>
 шақырмаң	0	шақыр<v><tv><neg><imp><p2><frm><sg>
-шақырмаңыздар	0	шақыр<v><tv><neg><imp><p2><frm><pl>
 шақырмастарыннікі	0	шақыр<v><tv><neg><gpr_fut><subst><pl><px3sp><gen><subst><nom>
 шақырмастығыннікі	0	шақыр<v><tv><neg><ger_ppot><px3sp><gen><subst><nom>
 шақырмастығыннікі	0	шақыр<v><tv><neg><gpr_ppot><px3sp><gen><subst><nom>
@@ -245,7 +243,6 @@
 шақырылмайтыныннікі	0	шақыр<v><tv><pass><neg><gpr_impf><subst><px3sp><gen><subst><nom>
 шақырылмақтарыннікі	0	шақыр<v><tv><pass><ger_obs><pl><px3sp><gen><subst><nom>
 шақырылмаң	0	шақыр<v><tv><pass><neg><imp><p2><frm><sg>
-шақырылмаңыздар	0	шақыр<v><tv><pass><neg><imp><p2><frm><pl>
 шақырылмастарыннікі	0	шақыр<v><tv><pass><neg><gpr_fut><subst><pl><px3sp><gen><subst><nom>
 шақырылмастығыннікі	0	шақыр<v><tv><pass><neg><ger_ppot><px3sp><gen><subst><nom>
 шақырылмастығыннікі	0	шақыр<v><tv><pass><neg><gpr_ppot><px3sp><gen><subst><nom>
@@ -266,7 +263,6 @@
 шақырылушысыннікі	0	шақыр<v><tv><pass><gpr_pot><subst><px3sp><gen><subst><nom>
 шақырылуыннікі	0	шақыр<v><tv><pass><ger><px3sp><gen><subst><nom>
 шақырылың	0	шақыр<v><tv><pass><imp><p2><frm><sg>
-шақырылыңыздар	0	шақыр<v><tv><pass><imp><p2><frm><pl>
 шақырысарларыннікі	0	шақыр<v><tv><coop><gpr_fut><subst><pl><px3sp><gen><subst><nom>
 шақырысарлығыннікі	0	шақыр<v><tv><coop><ger_ppot><px3sp><gen><subst><nom>
 шақырысарлығыннікі	0	шақыр<v><tv><coop><gpr_ppot><px3sp><gen><subst><nom>
@@ -297,7 +293,6 @@
 шақырыспайтыныннікі	0	шақыр<v><tv><coop><neg><gpr_impf><subst><px3sp><gen><subst><nom>
 шақырыспақтарыннікі	0	шақыр<v><tv><coop><ger_obs><pl><px3sp><gen><subst><nom>
 шақырыспаң	0	шақыр<v><tv><coop><neg><imp><p2><frm><sg>
-шақырыспаңыздар	0	шақыр<v><tv><coop><neg><imp><p2><frm><pl>
 шақырыспастарыннікі	0	шақыр<v><tv><coop><neg><gpr_fut><subst><pl><px3sp><gen><subst><nom>
 шақырыспастығыннікі	0	шақыр<v><tv><coop><neg><ger_ppot><px3sp><gen><subst><nom>
 шақырыспастығыннікі	0	шақыр<v><tv><coop><neg><gpr_ppot><px3sp><gen><subst><nom>
@@ -318,4 +313,3 @@
 шақырысушысыннікі	0	шақыр<v><tv><coop><gpr_pot><subst><px3sp><gen><subst><nom>
 шақырысуыннікі	0	шақыр<v><tv><coop><ger><px3sp><gen><subst><nom>
 шақырысың	0	шақыр<v><tv><coop><imp><p2><frm><sg>
-шақырысыңыздар	0	шақыр<v><tv><coop><imp><p2><frm><pl>

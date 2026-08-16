@@ -60,16 +60,32 @@ def read_entries(path: Path) -> list[str]:
     return out
 
 
-def evidence(entry: str, attested: dict[str, int]) -> tuple[int, int]:
+def evidence(entry: str, attested: dict[str, int],
+             headwords: frozenset[str] = frozenset()) -> tuple[int, int]:
     """Book-weight for the back column and for the front one.
+
+    A probe form that is a headword in its own right is not evidence about this
+    entry. `жиі` is the adverb "often", in 1,620 of the 3,860 editions, and it
+    is not `жи` plus `-і`: counting it made `жи` look front on 1,801 books
+    against 2,885, where `жиып` beats `жиіп` 1,669 to 7, `жиған` beats `жиген`
+    978 to 2, and `жиса` beats `жисе` 115 to nothing. One homograph outvoted
+    the paradigm.
 
     A loanword in `-ь` is probed without it as well: nothing attaches across a
     soft sign, so `медаль` is written `медалі` and the probes that keep the `ь`
     find nothing at all — which is how it came to have no evidence either way.
     """
     stems = [entry] + ([entry[:-1]] if entry.endswith("ь") else [])
-    back = sum(attested.get(stem + b, 0) for stem in stems for b, _f in PROBES)
-    front = sum(attested.get(stem + f, 0) for stem in stems for _b, f in PROBES)
+    back = front = 0
+    for b, f in PROBES:
+        for stem in stems:
+            for probe, side in ((stem + b, "back"), (stem + f, "front")):
+                if probe in headwords:
+                    continue
+                if side == "back":
+                    back += attested.get(probe, 0)
+                else:
+                    front += attested.get(probe, 0)
     return back, front
 
 
@@ -89,13 +105,14 @@ def main() -> int:
 
     attested = read_attested(args.attested)
     entries = read_entries(args.lexicon)
+    headwords = frozenset(entries)
 
     rows, agreed, thin = [], 0, 0
     for entry in entries:
         predicted = harmony(entry)
         if predicted is None:
             continue
-        back, front = evidence(entry, attested)
+        back, front = evidence(entry, attested, headwords)
         winner, won, lost = (("back", back, front) if back >= front
                              else ("front", front, back))
         if won < args.min_books:

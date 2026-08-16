@@ -246,7 +246,17 @@ lexicon actually uses lands somewhere.
 
 The same corpus asked for the comparative, which was missing altogether:
 `көбірек` 1,279 books, `азырақ` 861, `тереңірек` 484, `жақсырақ` 345, and
-`-лау/-леу` for the same degree — `үлкендеу` 187.
+`-лау/-леу` for the same degree — `үлкендеу` 187. And for the formal plural
+imperative, which тәуелдік had and рай did not, so it worked only on a stem
+that is also a noun: `келіңіздер` 165 books, `айтыңыздар` 96.
+
+Its last request was `жисын`, and the answer was not in the template at all.
+`жи` is written with a front vowel and takes back suffixes — `жиып` 1,669
+books, `жиған` 978, `жиды` 562 — so it needed a harmony override and did not
+have one, because the probe `жи`+`-і` finds `жиі`, the adverb "often", in 1,620
+editions. One homograph outweighed the whole paradigm. A probe form that is a
+headword in its own right is not evidence about the entry plus a suffix, and
+excluding those raises the entries the books can place from 23,969 to 29,379.
 
 ### One slot, two alternations that disagree
 

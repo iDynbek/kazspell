@@ -471,6 +471,10 @@ morphemes = [
   # `қоштасалық` 24 — and apertium-kaz spells it out as well.
   "йық", "йік", "алық", "елік",
   "ыңыз", "іңіз", "ыңдар", "іңдер", "ңыз", "ңіз", "ңдар", "ңдер",
+  # The formal plural imperative, which тәуелдік has and рай did not, so it
+  # was reachable only on a stem that is also a noun: `келіңіздер` is in 165
+  # of the 3,860 editions, `айтыңыздар` 96, `отырыңыздар` 80.
+  "ыңыздар", "іңіздер", "ңыздар", "ңіздер",
   "шы", "ші", "ңызшы", "ңізші",
 ]
 
