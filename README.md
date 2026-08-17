@@ -96,7 +96,7 @@ it takes; nothing downstream works until it does.
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
 | catches misspellings | **96.9%** | 96.4% | 99.4% |
-| accepts real Kazakh | **96.4%** | 98.1% | 82.1% |
+| accepts real Kazakh | **96.5%** | 98.1% | 82.1% |
 | accepts the corpus as it stands | 87.2% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.

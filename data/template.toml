@@ -407,6 +407,22 @@ morphemes = [
   "ушы", "уші", "ғыш", "гіш", "қыш", "кіш",
 ]
 
+# The perfect contracts with its first person singular and with nothing else:
+# `көргем` for `көргенмін` in 489 of the 3,860 editions against 326, `алғам`
+# 299, `естігем` 259, `келгем` 247, `ойлағам` 150. The second person does not —
+# `көргесің` is in 2 books against 39 for `көргенсің` — so this is a fused form
+# rather than a rule about dropping `-н-`, and it ends the word: nothing
+# follows a person marker.
+
+[[slot]]
+id = "esimshe_men"
+name = "өткен шақ есімше (жіктелген түрі)"
+gloss = "the contracted perfect first person: көргем, айтқам"
+track = "v"
+order = 30
+group = "finiteness"
+morphemes = ["ғам", "гем", "қам", "кем"]
+
 [[slot]]
 id = "tuiyq"
 name = "тұйық етістік"
