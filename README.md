@@ -225,6 +225,40 @@ the books do write, and 324 that nobody writes.
 We now build 97.6% of what apertium generates, from 96.1%, and 2 of its forms
 that the books also write remain refused.
 
+### All three on one harness
+
+Published figures are not measured against each other, so here are all three
+run on the same 20,000 attested types and the same 20,000 misspellings, the
+other two through `hunspell` itself:
+
+| | recall, book-weight | by type | precision |
+|---|---|---|---|
+| `kk_KZ` 2009 | 59.7% | 21.2% | **99.6%** |
+| hunspell-kk v0.3.0 | 94.9% | 70.4% | 97.4% |
+| kazspell | **96.7%** | **77.2%** | 96.8% |
+
+And what that means where it is felt — the share of tokens a checker would
+underline in 7,167 words of hand-tagged running Kazakh:
+
+| | flagged | one word in | excluding names | one word in |
+|---|---|---|---|---|
+| `kk_KZ` 2009 | 18.3% | 5 | 15.2% | 7 |
+| hunspell-kk v0.3.0 | **0.2%** | **478** | 0.2% | 556 |
+| kazspell | 0.7% | 152 | **0.2%** | **556** |
+
+Two things follow, and the second is the one that matters.
+
+On ordinary vocabulary this and hunspell-kk are **the same checker to a
+reader**: one false flag in 556 words each. The 6.8 points of type recall
+between them show up on the book corpus's long tail, not in running text.
+
+And the entire difference in what a reader would actually see — 1 in 152
+against 1 in 556 — is proper names, which this project excludes on purpose.
+Names are 7% of the tokens in that corpus and 19.3% of the missed weight in
+the book corpus. No amount of further morphology touches them. That is the
+next piece of work, and it is blocked on a case-aware frequency table, which
+is a corpus job rather than a grammar one.
+
 ### What the 2009 release's 99.4% actually is
 
 The table at the top of this file takes each project's published numbers, and
