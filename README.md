@@ -6,13 +6,19 @@ than on what a `.aff` file can express.
 ## Why this exists
 
 Three Kazakh spellcheckers exist and none of them is good enough, measured on
-the same harness:
+the same harness. Each number below is that project's own:
 
 | | catches misspellings | accepts real text |
 |---|---|---|
 | `kk_KZ` 2009 release | 99.4% | 82.1% |
 | hunspell-kk v0.3.0 | 96.4% | 98.1% |
 | apertium-kaz analyser | 98.7% | ~95.5% |
+
+Those are each project's own published figures, and they are not measured
+against each other. Run on one harness they look different — the 2009
+release's 99.4% is 99.6% here and its 82.1% is 21.2%, because it reaches that
+precision by refusing four fifths of the Kazakh put in front of it. See
+"What the 2009 release's 99.4% actually is" below.
 
 Nothing sits in the top-right corner, and each fails for a different reason.
 The 2009 file allows one suffix per word. hunspell-kk knows 131,289 entries but
@@ -97,7 +103,7 @@ it takes; nothing downstream works until it does.
 |---|---|---|---|
 | catches misspellings | **96.8%** | 96.4% | 99.4% |
 | accepts real Kazakh | **96.7%** | 98.1% | 82.1% |
-| accepts the corpus as it stands | 87.2% | — | — |
+| accepts the corpus as it stands | 87.6% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
 
