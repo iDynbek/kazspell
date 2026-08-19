@@ -104,8 +104,11 @@ def load_lexicon(lexicon: Path, discovered: Path,
     for form, features in read_discovered(discovered).items():
         out.setdefault(form, features)
     for form, track in read_tracks(tracks or Path("/nonexistent")).items():
-        if form in out and not out[form]:
-            out[form] = frozenset({track})
+        if form in out:
+            # Union, not replacement. For an entry with no part of speech this
+            # is the same thing; for one whose part of speech named the other
+            # track it adds the missing one rather than trading it away.
+            out[form] = out[form] | {track}
     return out
 
 

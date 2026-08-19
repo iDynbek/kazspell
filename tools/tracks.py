@@ -36,6 +36,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 
+from analyse import default  # noqa: E402
+from phonology import VOICING  # noqa: E402
+
+# `тотық` is written `тотығ` before a vowel, so its verbal forms have to
+# be looked for under both spellings.
+VOICED_FROM = {v: k for k, v in VOICING.items()}
+
 # Endings that only one track can take. No case suffix is verbal and no tense
 # suffix is nominal, so an attested `<entry>+ған` is evidence of a verb in a
 # way that needs no model to interpret.
@@ -60,6 +67,24 @@ def evidence(entry: str, attested: dict[str, int]) -> tuple[int, int]:
             sum(attested.get(entry + s, 0) for s in NOMINAL))
 
 
+VERBAL_POS = {"v", "v-trans", "v-intrans", "v-aux"}
+NOMINAL_POS = {"n", "np", "adj", "adv", "num", "pron", "det", "post",
+               "interj", "conj", "abbr"}
+
+
+def labelled(lexicon: Path) -> list[tuple[str, set[str]]]:
+    """Entries that do have a part of speech, and what it says."""
+    out = []
+    for line in lexicon.read_text(encoding="utf-8").splitlines():
+        if line.startswith("#") or not line.strip():
+            continue
+        form, pos = (line.split("\t") + [""])[:2]
+        tags = {t for t in pos.split("+") if t and t != "?"}
+        if tags:
+            out.append((form, tags))
+    return out
+
+
 def unlabelled(lexicon: Path, discovered: Path | None = None) -> list[str]:
     """Every entry with nothing said about its part of speech.
 
@@ -82,6 +107,26 @@ def unlabelled(lexicon: Path, discovered: Path | None = None) -> list[str]:
     return out
 
 
+def unbuilt(entry: str, suffixes: list[str], attested: dict[str, int],
+            analyser) -> int:
+    """Book-weight of forms on this track that the recogniser cannot build.
+
+    Attested forms alone are no evidence. `жүре` is a noun and the books write
+    `жүреді` 1,928 times, but that is `жүр` plus `-е` plus `-ді` and the
+    recogniser already builds it — the weight belongs to `жүр`. Only a form
+    nothing can currently spell argues that this entry is missing a track, and
+    that is what `тотығып` is: `тотық` is filed a noun, `тотығып` is in 92 of
+    the 3,860 editions, and no walk reaches it.
+    """
+    stems = [entry]
+    if entry[-1:] in VOICED_FROM:
+        stems.append(entry[:-1] + VOICED_FROM[entry[-1]])
+    return sum(attested.get(stem + suffix, 0)
+               for stem in stems for suffix in suffixes
+               if attested.get(stem + suffix, 0)
+               and not analyser.accepts(stem + suffix))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -92,6 +137,10 @@ def main() -> int:
     ap.add_argument("-o", "--output", type=Path, default=ROOT / "data/tracks.tsv")
     ap.add_argument("--min-books", type=int, default=2,
                     help="ignore an entry with less evidence than this")
+    ap.add_argument("--add-track", type=int, default=20,
+                    help="unbuildable book-weight before a labelled entry is "
+                         "given the track its part of speech denies it")
+    ap.add_argument("--min-stem", type=int, default=3)
     ap.add_argument("--ratio", type=float, default=1.5,
                     help="how far the winning track must be ahead")
     args = ap.parse_args()
@@ -100,6 +149,24 @@ def main() -> int:
     entries = unlabelled(args.lexicon, args.discovered)
 
     rows, thin = [], 0
+    # An entry that names one track and inflects on the other. A part of speech
+    # is one source's opinion, and the books disagree with it often enough to
+    # matter: `сен` is filed a verb — сену, to believe — and is also the
+    # pronoun, with `сенде`, `сенге` and `сенмен` in 1,041 books between them.
+    analyser = default()
+    for entry, tags in labelled(args.lexicon):
+        if len(entry) < args.min_stem:
+            continue
+        if tags & NOMINAL_POS and not tags & VERBAL_POS:
+            weight = unbuilt(entry, VERBAL, attested, analyser)
+            if weight >= args.add_track:
+                rows.append((entry, "v", weight, 0))
+        elif tags & VERBAL_POS and not tags & NOMINAL_POS:
+            weight = unbuilt(entry, NOMINAL, attested, analyser)
+            if weight >= args.add_track:
+                rows.append((entry, "n", 0, weight))
+    added = len(rows)
+
     for entry in entries:
         verbal, nominal = evidence(entry, attested)
         won, lost = max(verbal, nominal), min(verbal, nominal)
@@ -116,6 +183,8 @@ def main() -> int:
         encoding="utf-8")
 
     verbs = sum(1 for r in rows if r[1] == "v")
+    print(f"{added:,} entries were given the track their part of speech "
+          f"denied them")
     print(f"{len(entries):,} entries with no part of speech")
     print(f"  {len(rows):,} placed ({len(rows) / max(len(entries), 1):.1%}): "
           f"{verbs:,} verbal, {len(rows) - verbs:,} nominal → {args.output}")

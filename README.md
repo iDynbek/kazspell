@@ -95,8 +95,8 @@ it takes; nothing downstream works until it does.
 
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
-| catches misspellings | **96.9%** | 96.4% | 99.4% |
-| accepts real Kazakh | **96.5%** | 98.1% | 82.1% |
+| catches misspellings | **96.8%** | 96.4% | 99.4% |
+| accepts real Kazakh | **96.7%** | 98.1% | 82.1% |
 | accepts the corpus as it stands | 87.2% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
@@ -218,6 +218,50 @@ the books do write, and 324 that nobody writes.
 
 We now build 97.6% of what apertium generates, from 96.1%, and 2 of its forms
 that the books also write remain refused.
+
+### What the 2009 release's 99.4% actually is
+
+The table at the top of this file takes each project's published numbers, and
+one of them is not what it looks like. Run on *this* harness — the same 20,000
+attested types and the same 20,000 misspellings, through `hunspell` itself:
+
+| | recall, book-weight | by type | precision |
+|---|---|---|---|
+| `kk_KZ` 2009 | 59.7% | 21.2% | **99.6%** |
+| kazspell | **96.7%** | **77.2%** | 96.8% |
+
+It reaches 99.6% by refusing four fifths of the Kazakh put in front of it. That
+is not a better dictionary, it is a smaller one: a `.aff` that allows one suffix
+per word cannot build `мектептерімізде`, so it cannot be wrong about it either.
+The 82.1% recall in the table above was measured elsewhere and is not
+comparable to anything here.
+
+The other half of the question is whether it knows things we do not, and it
+does not. Of the 20,000 attested types it accepts 38 that we refuse, worth 413
+books; we accept 8,984 that it refuses, worth 170,222. Of its 53,971 headwords,
+10,979 are not entries here — and **not one of them appears in even 2 of the
+3,860 editions**. They are the same unattested residue `tools/prune.py`
+removed.
+
+The 38 were worth having, though, because a list of everything a rival gets
+right and you get wrong is a specification, however short. They were all one
+bug: `тотық` is filed a noun and `тотығып` is in 92 books, `былық` is filed a
+noun and `былығып` is in 75.
+
+### A part of speech is one source's opinion
+
+`tracks.py` was reading the books for entries that had no part of speech. The
+entries that *have* one can be wrong too, and the books say so: `сен` is filed
+a verb — сену, to believe — and is also the second-person pronoun, with
+`сенде`, `сенге` and `сенмен` in 1,041 editions between them.
+
+The test has to be careful about what counts as evidence. `жүре` is a noun and
+the books write `жүреді` 1,928 times, but that is `жүр` plus `-е` plus `-ді`
+and the recogniser already builds it — the weight belongs to `жүр`, not to
+`жүре`. Only a form that **nothing can currently spell** argues that an entry
+is missing a track. On that test 411 entries get the track their part of speech
+denied them, for 69 real words gained, none lost, and 13 misspellings let
+through.
 
 ### A second corpus, and the bug it found
 
