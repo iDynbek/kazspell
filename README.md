@@ -105,7 +105,7 @@ it takes; nothing downstream works until it does.
 | | kazspell | hunspell-kk v0.3.0 | 2009 release |
 |---|---|---|---|
 | catches misspellings | **96.8%** | 96.4% | 99.4% |
-| accepts real Kazakh | **96.7%** | 98.1% | 82.1% |
+| accepts real Kazakh | **96.9%** | 98.1% | 82.1% |
 | accepts the corpus as it stands | 87.6% | — | — |
 
 Measured on 20,000 attested types and 20,000 misspellings of them.
@@ -811,9 +811,24 @@ would let it inflect twice. 12 are refused by the harmony gate, which stays
 whatever the capitals say. 1,814 remain, and they go in as `np`: the nominal
 track, and nothing else.
 
-**46 real words gained, none lost, and not one misspelling let through.** Names
-cost nothing in precision, because a capitalised name is not where a typo of an
-ordinary word lands.
+The two available name lists — KazNERD's annotations and Wikipedia's titles,
+21,070 entries — go through the same gates on their source's authority, having
+no case evidence of their own. **3,734 are refused for being one keyboard edit
+from an ordinary word**, which is the gate this whole section exists for.
+15,306 names remain.
+
+**131 real words gained, none lost, 9 misspellings let through**, and all nine
+are a typo of one name landing on another — `айымбегім` from `райымбегім`,
+`аманайы` from `амантайы`. That is inherent to a dense name inventory and it is
+cheap: a capitalised name is not where a typo of an *ordinary* word lands.
+
+Two mistakes worth recording, because both were silent. The tool reads the
+analyser to ask what is already buildable, and the shipped analyser loads the
+names file the tool writes — so the second run found every name already known
+and emitted 847 instead of 13,673. And the check has to be lexicon
+*membership*, not buildability: dropping `төке` because the morphology could
+spell it took `төкеңнен` and `төкені` with it, which is the same lesson
+`prune.py` learned about load-bearing entries.
 
 ### What is still out
 

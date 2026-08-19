@@ -37,7 +37,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 
-from analyse import default  # noqa: E402
+from analyse import (Analyser, load_lexicon, read_elision,  # noqa: E402
+                     read_harmony)
+from template import load as load_template  # noqa: E402
 
 KAZAKH_ONLY = set("әғқңөұүһі")
 TRANSLIT = {"у": "ұү", "и": "і", "к": "қ", "г": "ғ", "н": "ң", "а": "ә", "о": "ө"}
@@ -54,6 +56,12 @@ def kazakhised(word: str):
                 for i, c in zip(combo, choice):
                     out[i] = c
                 yield "".join(out)
+
+
+def read_attested(path: Path) -> dict[str, int]:
+    with gzip.open(path, "rt", encoding="utf-8") as fh:
+        return {w: int(n) for w, n in
+                (line.rstrip("\n").split("\t") for line in fh)}
 
 
 def read_case(path: Path) -> dict[str, tuple[int, int, int]]:
@@ -77,10 +85,23 @@ def main() -> int:
     ap.add_argument("--ratio", type=float, default=9.0,
                     help="how far capitalised must beat lower case")
     ap.add_argument("--min-length", type=int, default=4)
+    ap.add_argument("--lists", type=Path, nargs="*", default=[
+        ROOT.parent / "hunspell-kk/data/names.txt",
+        ROOT.parent / "hunspell-kk/data/names_wp.txt"],
+        help="name lists to admit on their own authority, gated the same way")
     args = ap.parse_args()
 
     case = read_case(args.case)
-    an = default()
+    attested = read_attested(ROOT / "data/attested.tsv.gz")
+    # Deliberately without the names file this writes. Using the shipped
+    # analyser would read the last run's output back in, find every name
+    # already buildable, and emit almost nothing — which is what it did.
+    an = Analyser(load_template(),
+                  load_lexicon(ROOT / "data/lexicon.tsv",
+                               ROOT / "data/discovered.tsv",
+                               ROOT / "data/tracks.tsv"),
+                  overrides=read_harmony(ROOT / "data/harmony.tsv"),
+                  elision=read_elision(ROOT / "data/elision.tsv"))
 
     candidates = {f for f, (up, low, _w) in case.items()
                   if up >= args.min_caps and up >= low * args.ratio
@@ -90,7 +111,9 @@ def main() -> int:
 
     # A candidate a shorter candidate already explains is that one inflected.
     lemmas, inflected = [], 0
-    for form in sorted(candidates, key=len):
+    # Sorted by length and then alphabetically: ties broken by set order made
+    # the output differ between runs of the same input.
+    for form in sorted(candidates, key=lambda f: (len(f), f)):
         shorter = None
         for cut in range(args.min_length, len(form)):
             head, rest = form[:cut], form[cut:]
@@ -105,13 +128,35 @@ def main() -> int:
         else:
             lemmas.append(form)
 
+    # The lists are names somebody annotated rather than names this corpus
+    # capitalises — KazNERD's training data and Wikipedia's titles — so they
+    # carry no case evidence and enter on their source's authority. Everything
+    # after this point applies to them exactly as it does to the corpus's own.
+    listed = 0
+    for path in args.lists:
+        if not path.exists():
+            print(f"  no list at {path}", file=sys.stderr)
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            form = line.strip().lower()
+            if (form and not form.startswith("#") and form.isalpha()
+                    and len(form) >= args.min_length and form not in candidates):
+                lemmas.append(form)
+                listed += 1
+    print(f"  {listed:,} more from the lists", file=sys.stderr)
+
     kept, refused = [], []
     for form in lemmas:
+        # Membership, not buildability. A name the morphology happens to be
+        # able to spell is still needed as an entry, because its own
+        # inflections are built on it: dropping `төке` for being spellable
+        # took `төкеңнен` and `төкені` with it.
         if form in an.lexicon:
             continue
         if not (set(form) & KAZAKH_ONLY):
             clash = next((v for v in kazakhised(form)
-                          if v in case and case[v][1] > case[v][0]), None)
+                          if (v in case and case[v][1] > case[v][0])
+                          or attested.get(v, 0) >= 2), None)
             if clash:
                 refused.append((form, clash))
                 continue
@@ -121,8 +166,11 @@ def main() -> int:
         "# form\tcapitalised\tlower-case\tworks — tools/names.py\n"
         "# proper names the corpus capitalises, reduced to the lemma. They go\n"
         "# in as `np`, so the nominal track and nothing else.\n"
-        + "\n".join(f"{f}\t{case[f][0]}\t{case[f][1]}\t{case[f][2]}"
-                    for f in sorted(kept, key=lambda x: -case[x][0])) + "\n",
+        + "\n".join(f"{f}\t{case.get(f, (0, 0, 0))[0]}\t"
+                    f"{case.get(f, (0, 0, 0))[1]}\t{case.get(f, (0, 0, 0))[2]}"
+                    for f in sorted(kept,
+                                    key=lambda x: (-case.get(x, (0, 0, 0))[0], x)))
+        + "\n",
         encoding="utf-8")
 
     print(f"  {inflected:,} were a shorter name already inflected")
