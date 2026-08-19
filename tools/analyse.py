@@ -92,8 +92,26 @@ def read_tracks(path: Path) -> dict[str, str]:
     return out
 
 
+def read_names(path: Path) -> dict[str, frozenset[str]]:
+    """Proper names the corpus capitalises — see tools/names.py.
+
+    They carry `np` and nothing else, so they take the nominal track and the
+    passive and the tenses stay shut to them. Kept in their own file because
+    they are the one class of entry admitted on evidence about *how* a word is
+    written rather than on a source vouching for it.
+    """
+    if not path.exists():
+        return {}
+    out = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.startswith("#"):
+            out[line.split("\t")[0]] = frozenset({"np"})
+    return out
+
+
 def load_lexicon(lexicon: Path, discovered: Path,
-                 tracks: Path | None = None) -> dict[str, frozenset[str]]:
+                 tracks: Path | None = None,
+                 names: Path | None = None) -> dict[str, frozenset[str]]:
     """The vouched-for entries, plus the discovered ones that add something.
 
     An entry with no part of speech is opened on both tracks, which is honest
@@ -102,6 +120,8 @@ def load_lexicon(lexicon: Path, discovered: Path,
     """
     out = read_lexicon(lexicon)
     for form, features in read_discovered(discovered).items():
+        out.setdefault(form, features)
+    for form, features in read_names(names or Path("/nonexistent")).items():
         out.setdefault(form, features)
     for form, track in read_tracks(tracks or Path("/nonexistent")).items():
         if form in out:
@@ -306,7 +326,8 @@ class Analyser:
 def default() -> Analyser:
     return Analyser(load(), load_lexicon(ROOT / "data/lexicon.tsv",
                                         ROOT / "data/discovered.tsv",
-                                        ROOT / "data/tracks.tsv"),
+                                        ROOT / "data/tracks.tsv",
+                                        ROOT / "data/names.tsv"),
                     overrides=read_harmony(ROOT / "data/harmony.tsv"),
                     elision=read_elision(ROOT / "data/elision.tsv"))
 
@@ -322,7 +343,8 @@ def main() -> int:
 
     an = Analyser(load(), load_lexicon(args.lexicon,
                                        ROOT / "data/discovered.tsv",
-                                       ROOT / "data/tracks.tsv"),
+                                       ROOT / "data/tracks.tsv",
+                                       ROOT / "data/names.tsv"),
                   overrides=read_harmony(ROOT / "data/harmony.tsv"),
                   elision=read_elision(ROOT / "data/elision.tsv"))
     bad = 0

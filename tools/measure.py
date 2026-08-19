@@ -127,6 +127,7 @@ def main() -> int:
     ap.add_argument("--discovered", type=Path,
                     default=ROOT / "data/discovered.tsv")
     ap.add_argument("--tracks", type=Path, default=ROOT / "data/tracks.tsv")
+    ap.add_argument("--names", type=Path, default=ROOT / "data/names.tsv")
     ap.add_argument("--attested", type=Path, default=ROOT / "data/attested.tsv.gz")
     ap.add_argument("--misses", type=Path, help="write the rejected forms here")
     ap.add_argument("--russian", type=Path, default=ROOT / "data/russian.tsv.gz",
@@ -135,7 +136,8 @@ def main() -> int:
 
     attested = read_attested(args.attested)
     russian = read_russian(args.russian)
-    an = Analyser(load(), load_lexicon(args.lexicon, args.discovered, args.tracks),
+    an = Analyser(load(), load_lexicon(args.lexicon, args.discovered, args.tracks,
+                                   args.names),
                   overrides=read_harmony(ROOT / "data/harmony.tsv"),
                   elision=read_elision(ROOT / "data/elision.tsv"))
     rng = random.Random(args.seed)

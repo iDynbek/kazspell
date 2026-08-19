@@ -78,6 +78,9 @@ it takes; nothing downstream works until it does.
                                   does not predict, read off the books
     tools/tracks.py               which track an entry with no part of speech
                                   belongs on, read off the books
+    tools/build_case.py           how often each word is capitalised
+                                  mid-sentence, which the folded table lost
+    tools/names.py                proper names, reduced to the lemma
     tools/prune.py                entries in no book that hold nothing up
     tools/oracle.py               every form apertium builds for a lemma
                                   against every form this builds, with the
@@ -780,7 +783,39 @@ Mixed-script entries: **0**. `сезим`, `курып` and `акысыз` are g
 | with a part of speech | 72,642 | 56.4% |
 | attested in the books | 62,087 | 48.2% |
 
-### Proper names are deliberately out, for now
+### Proper names, and the case the corpus still had
+
+Names are two fifths of what a Kazakh checker flags in running text, and this
+one refused them all. Not for want of a list — 23,981 were available — but
+because a list cannot simply be admitted: **995 of them sit one harmony edit
+from an ordinary word**, and they are the commonest words in the language.
+`болган` against `болған` in 3,236 of 3,860 books, `ким` against `кім`, `жана`
+against `жаңа`. Admitting those makes the commonest misspelling of the
+commonest words impossible to flag.
+
+What was missing was the case. `data/attested.tsv.gz` is folded, so `Тұрсын`
+the name and `тұрсың` "you stand" are one row, and no rule can separate them.
+kazdict keeps its citation quotes verbatim — 292,305 of them — and
+`tools/build_case.py` counts how often each word is capitalised *mid-sentence*,
+where a capital means something. It settles exactly the case that blocked this:
+
+    абай        594 capitalised     24 lower      a name
+    тұрсын       23 capitalised    232 lower      the verb
+    болған       32 capitalised  4,962 lower      a word
+    болган        0 capitalised     12 lower      neither
+
+`tools/names.py` turns that into lemmas. 4,754 forms are capitalised and hardly
+ever otherwise; 1,609 of them are a shorter name already inflected —
+`абайдың`, `қазақстанда` — and drop out, because admitting a form as an entry
+would let it inflect twice. 12 are refused by the harmony gate, which stays
+whatever the capitals say. 1,814 remain, and they go in as `np`: the nominal
+track, and nothing else.
+
+**46 real words gained, none lost, and not one misspelling let through.** Names
+cost nothing in precision, because a capitalised name is not where a typo of an
+ordinary word lands.
+
+### What is still out
 
 Names are two fifths of what a Kazakh checker flags in running text, so they
 have to be solved eventually. They are not in this lexicon, because a name list

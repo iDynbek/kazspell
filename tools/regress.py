@@ -92,6 +92,7 @@ def main() -> int:
     ap.add_argument("--discovered", type=Path,
                     default=ROOT / "data/discovered.tsv")
     ap.add_argument("--tracks", type=Path, default=ROOT / "data/tracks.tsv")
+    ap.add_argument("--names", type=Path, default=ROOT / "data/names.tsv")
     ap.add_argument("--attested", type=Path, default=ROOT / "data/attested.tsv.gz")
     ap.add_argument("--baseline", type=Path, default=ROOT / "data/verdicts.tsv.gz")
     ap.add_argument("--accept", action="store_true",
@@ -101,7 +102,8 @@ def main() -> int:
     args = ap.parse_args()
 
     attested = read_attested(args.attested)
-    an = Analyser(load(), load_lexicon(args.lexicon, args.discovered, args.tracks),
+    an = Analyser(load(), load_lexicon(args.lexicon, args.discovered, args.tracks,
+                                   args.names),
                   overrides=read_harmony(ROOT / "data/harmony.tsv"),
                   elision=read_elision(ROOT / "data/elision.tsv"))
     now = verdicts(an, attested, args.sample, args.typos, args.seed,
